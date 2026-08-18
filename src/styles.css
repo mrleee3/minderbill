@@ -1,0 +1,148 @@
+/* ---- MinderBill design tokens ----
+   Palette: warm, domestic, trustworthy. Money must always read crisply.
+   paper    #FAF9F6  warm off-white background
+   ink      #1E2A32  deep slate — all primary text
+   marigold #E8A13A  action / active accent (sunshine)
+   leaf     #4E9B6F  government-funded (semantic green, used ONLY for funding)
+   clay     #C4534A  absences, unpaid, alerts
+   mist     #E7E4DC  hairlines, muted surfaces
+   Type: ui-rounded display (native iOS friendliness, zero network weight —
+   deliberate for an offline-first app), system-ui body, tabular numerals
+   everywhere money or hours appear. */
+
+:root {
+  --paper: #faf9f6;
+  --ink: #1e2a32;
+  --ink-60: rgba(30, 42, 50, 0.6);
+  --marigold: #e8a13a;
+  --marigold-soft: rgba(232, 161, 58, 0.14);
+  --leaf: #4e9b6f;
+  --leaf-soft: rgba(78, 155, 111, 0.12);
+  --clay: #c4534a;
+  --mist: #e7e4dc;
+  --card: #ffffff;
+  --radius: 14px;
+  --display: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+#root { min-height: 100dvh; display: flex; flex-direction: column; }
+
+.app-header {
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.app-title {
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.app-title .bill { color: var(--marigold); }
+.build-id { font-size: 11px; color: var(--ink-60); font-variant-numeric: tabular-nums; }
+
+.screen {
+  flex: 1;
+  padding: 4px 18px 24px;
+  overflow-y: auto;
+}
+.screen h2 {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 10px 0 8px;
+}
+
+.empty {
+  margin-top: 14vh;
+  text-align: center;
+  color: var(--ink-60);
+  padding: 0 24px;
+}
+.empty .glyph { font-size: 40px; display: block; margin-bottom: 10px; }
+.empty p { margin: 4px 0; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--mist);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin: 10px 0;
+}
+
+.money, .hours { font-variant-numeric: tabular-nums; }
+
+/* ---- Tab bar ---- */
+.tabbar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--mist);
+  background: var(--paper);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tab {
+  appearance: none;
+  border: 0;
+  background: none;
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-60);
+  padding: 8px 0 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.tab .icon { font-size: 20px; line-height: 1; }
+.tab.active { color: var(--ink); }
+.tab.active .icon-wrap {
+  background: var(--marigold-soft);
+  border-radius: 10px;
+}
+.tab .icon-wrap { padding: 3px 14px; }
+
+/* ---- Update banner (red restart pill, Waymark pattern) ---- */
+.update-pill {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--clay);
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13px;
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 18px;
+  box-shadow: 0 4px 14px rgba(30, 42, 50, 0.25);
+  z-index: 100;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .update-pill { animation: pill-in 0.3s ease-out; }
+  @keyframes pill-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+}
