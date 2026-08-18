@@ -16,6 +16,10 @@ import {
 import { resolveDay } from "../lib/schedule";
 import { childColour } from "../lib/settings";
 import { Sheet } from "../components/Sheet";
+import { useEffect } from "react";
+import { getClosures, getTermBlocks } from "../lib/settings";
+import { CLOSURE_COLOURS, CLOSURE_LABELS, closureOn, type Closure } from "../data/closures";
+import type { TermBlock } from "../data/surrey";
 import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
 export function Month() {
@@ -24,6 +28,15 @@ export function Month() {
   const [editing, setEditing] = useState<ChildContract | null>(null);
 
   const children = useLiveQuery(() => db.children.toArray(), []) ?? [];
+  const [closures, setClosureList] = useState<Closure[]>([]);
+  const [terms, setTerms] = useState<TermBlock[]>([]);
+
+  useEffect(() => {
+    getClosures().then(setClosureList);
+    getTermBlocks().then(setTerms);
+  }, []);
+
+  const inTerm = (iso: string) => terms.some((t) => t.start <= iso && iso <= t.end);
   const days = monthDays(viewDate);
   const monthPrefix = viewDate.slice(0, 7);
   const logs =
@@ -45,7 +58,7 @@ export function Month() {
   const leading = weekdayIndex(days[0]);
   const totalMinutes = days.reduce((sum, iso) => {
     for (const c of children) {
-      const r = resolveDay(c, iso, logFor(c, iso));
+      const r = resolveDay(c, iso, logFor(c, iso), closures);
       if (r && !r.absence) sum += r.minutes;
     }
     return sum;
@@ -56,7 +69,7 @@ export function Month() {
       child: c,
       colour: childColour(c, i),
       log: logFor(c, selDay),
-      resolved: resolveDay(c, selDay, logFor(c, selDay)),
+      resolved: resolveDay(c, selDay, logFor(c, selDay), closures),
     }))
     .sort((a, b) => (a.resolved?.startMin ?? 9999) - (b.resolved?.startMin ?? 9999));
 
@@ -78,17 +91,25 @@ export function Month() {
         {days.map((iso) => {
           const dots = children
             .map((c, i) => {
-              const r = resolveDay(c, iso, logFor(c, iso));
+              const r = resolveDay(c, iso, logFor(c, iso), closures);
               if (!r) return null;
               return { colour: childColour(c, i), absent: !!r.absence };
             })
             .filter(Boolean) as { colour: string; absent: boolean }[];
+          const closure = closureOn(iso, closures);
           return (
             <button
               key={iso}
-              className={`month-day${iso === today ? " today" : ""}${dots.length ? " busy" : ""}${iso === selDay ? " sel" : ""}`}
+              className={`month-day${iso === today ? " today" : ""}${dots.length ? " busy" : ""}${iso === selDay ? " sel" : ""}${terms.length && !inTerm(iso) ? " out-of-term" : ""}`}
               onClick={() => setSelDay(iso)}
+              title={closure?.label}
             >
+              <span
+                className="closure-bar"
+                style={{
+                  background: closure ? CLOSURE_COLOURS[closure.kind] : "transparent",
+                }}
+              />
               <span className="num">{parseISO(iso).d}</span>
               <span className="dots">
                 {dots.slice(0, 4).map((d, i) => (
@@ -100,8 +121,27 @@ export function Month() {
         })}
       </div>
       <p className="day-total hours">{fmtHours(totalMinutes)} across {monthLabel(viewDate)}</p>
+      <div className="legend">
+        <span><i className="swatch term" /> Outside term</span>
+        <span><i className="swatch" style={{ background: CLOSURE_COLOURS.minderHoliday }} /> {CLOSURE_LABELS.minderHoliday}</span>
+        <span><i className="swatch" style={{ background: CLOSURE_COLOURS.bankHoliday }} /> {CLOSURE_LABELS.bankHoliday}</span>
+      </div>
 
       <div className="form-section">{selDay === today ? "Today" : fmtDateLong(selDay)}</div>
+      {(() => {
+        const c = closureOn(selDay, closures);
+        return c ? (
+          <div className="closure-note" style={{ borderColor: CLOSURE_COLOURS[c.kind] }}>
+            <strong>{c.label}</strong>
+            <span className="hint">
+              Everyone's day is set to "{CLOSURE_LABELS[c.kind]}" and charged by each child's
+              policy. Tap a child to override just them.
+            </span>
+          </div>
+        ) : terms.length && !inTerm(selDay) ? (
+          <p className="hint">Outside term dates — no funded hours on this day.</p>
+        ) : null;
+      })()}
       {selRows.filter((r) => r.resolved).length === 0 && (
         <p className="hint">No children attending this day. Tap a child below to log an extra day.</p>
       )}
@@ -152,7 +192,7 @@ export function Month() {
           <DayEditor
             child={editing}
             date={selDay}
-            resolved={resolveDay(editing, selDay, logFor(editing, selDay))}
+            resolved={resolveDay(editing, selDay, logFor(editing, selDay), closures)}
             log={logFor(editing, selDay)}
             onDone={() => setEditing(null)}
           />

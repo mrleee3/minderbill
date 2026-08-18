@@ -11,6 +11,15 @@ import {
   type Business,
 } from "../lib/settings";
 import { fundedWeeksBetween } from "../lib/terms";
+import {
+  CLOSURE_COLOURS,
+  CLOSURE_LABELS,
+  UK_BANK_HOLIDAYS,
+  type Closure,
+  type ClosureKind,
+} from "../data/closures";
+import { getClosures, setClosures as saveClosures } from "../lib/settings";
+import { fmtDateLong } from "../lib/dates";
 import { addDemoChildren, removeDemoData } from "../lib/demo";
 import { todayISO } from "../lib/dates";
 import { academicYearOf } from "../lib/terms";
@@ -19,12 +28,38 @@ export function Settings() {
   const [biz, setBiz] = useState<Business>(DEFAULT_BUSINESS);
   const [blocks, setBlocks] = useState<TermBlock[]>([]);
   const [savedTick, setSavedTick] = useState(false);
+  const [closures, setClosureList] = useState<Closure[]>([]);
+  const [newStart, setNewStart] = useState(todayISO());
+  const [newEnd, setNewEnd] = useState(todayISO());
+  const [newLabel, setNewLabel] = useState("");
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
     getBusiness().then(setBiz);
     getTermBlocks().then(setBlocks);
+    getClosures().then(setClosureList);
   }, []);
+
+  async function persistClosures(next: Closure[]) {
+    const sorted = [...next].sort((a, b) => a.start.localeCompare(b.start));
+    setClosureList(sorted);
+    await saveClosures(sorted);
+  }
+
+  async function addClosure(kind: ClosureKind) {
+    if (newEnd < newStart) return;
+    await persistClosures([
+      ...closures,
+      {
+        id: `c-${Date.now()}`,
+        kind,
+        start: newStart,
+        end: newEnd,
+        label: newLabel.trim() || CLOSURE_LABELS[kind],
+      },
+    ]);
+    setNewLabel("");
+  }
 
   const bizField = (key: keyof Business, label: string, placeholder = "") => (
     <label className="field" key={key}>
@@ -166,6 +201,66 @@ export function Settings() {
       <p className="hint">
         Academic year {ay.label}: <strong>{fundedCount} funded weeks</strong> (LA standard is 38).
       </p>
+
+      <div className="form-section">Closures</div>
+      <p className="hint">
+        Days you're closed. Every child's planned day becomes that absence automatically and is
+        charged by their own policy — you can still override one child on the day itself.
+      </p>
+      <div className="field-row">
+        <label className="field">
+          <span>From</span>
+          <input type="date" value={newStart} onChange={(e) => { setNewStart(e.target.value); if (newEnd < e.target.value) setNewEnd(e.target.value); }} />
+        </label>
+        <label className="field">
+          <span>To</span>
+          <input type="date" value={newEnd} min={newStart} onChange={(e) => setNewEnd(e.target.value)} />
+        </label>
+      </div>
+      <label className="field">
+        <span>Label (optional)</span>
+        <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Half term break" />
+      </label>
+      <div className="field-row">
+        <button className="btn-primary" onClick={() => addClosure("minderHoliday")}>
+          Add my holiday
+        </button>
+        <button className="btn-quiet" onClick={() => addClosure("bankHoliday")}>
+          Add as bank holiday
+        </button>
+      </div>
+      {closures.length === 0 && <p className="hint">No closures yet.</p>}
+      {closures.map((c) => (
+        <div key={c.id} className="closure-row">
+          <i className="swatch" style={{ background: CLOSURE_COLOURS[c.kind] }} />
+          <span className="closure-main">
+            <span className="closure-label">{c.label}</span>
+            <span className="hint">
+              {c.start === c.end
+                ? fmtDateLong(c.start)
+                : `${fmtDateLong(c.start)} – ${fmtDateLong(c.end)}`}
+            </span>
+          </span>
+          <button
+            className="sheet-close"
+            aria-label={`Remove ${c.label}`}
+            onClick={() => persistClosures(closures.filter((x) => x.id !== c.id))}
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+      <button
+        className="btn-quiet"
+        onClick={() =>
+          persistClosures([
+            ...closures.filter((c) => c.kind !== "bankHoliday"),
+            ...UK_BANK_HOLIDAYS,
+          ])
+        }
+      >
+        Reset UK bank holidays
+      </button>
 
       <div className="form-section">Backup</div>
       <p className="hint">

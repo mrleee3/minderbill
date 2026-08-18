@@ -8,6 +8,7 @@
 
 import type { AbsenceReason, ChildContract, DayLog } from "../db";
 import type { TermBlock } from "../data/surrey";
+import type { Closure } from "../data/closures";
 import { addDays } from "../lib/dates";
 import { resolveDay } from "../lib/schedule";
 import { effectiveRatePence } from "../lib/schedule";
@@ -91,7 +92,8 @@ export function buildMonthInvoice(
   child: ChildContract,
   period: string, // "2026-09"
   logs: DayLog[],
-  termBlocks: TermBlock[]
+  termBlocks: TermBlock[],
+  closures: Closure[] = []
 ): MonthInvoiceResult {
   const first = `${period}-01`;
   const [y, m] = period.split("-").map(Number);
@@ -121,7 +123,7 @@ export function buildMonthInvoice(
 
     for (let i = 0; i < 7; i++) {
       const date = addDays(monday, i);
-      const r = resolveDay(child, date, logByDate.get(date));
+      const r = resolveDay(child, date, logByDate.get(date), closures);
       if (!r) continue;
       const policy = r.absence ? policyFor(child, r.absence) : undefined;
       const chargeMinutes = Math.round(r.minutes * (policy ? MULT[policy] : 1));

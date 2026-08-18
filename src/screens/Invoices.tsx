@@ -4,7 +4,8 @@ import { db, type ChildContract, type Invoice } from "../db";
 import { addMonths, fmtHours, monthLabel, todayISO } from "../lib/dates";
 import { buildMonthInvoice, type DetailedLine, type MonthInvoiceResult } from "../engine/monthInvoice";
 import { formatPence } from "../engine/invoice";
-import { getBusiness, getTermBlocks, childColour, type Business } from "../lib/settings";
+import { getBusiness, getClosures, getTermBlocks, childColour, type Business } from "../lib/settings";
+import type { Closure } from "../data/closures";
 import { ABSENCE_LABELS } from "../components/DayEditor";
 import { Sheet } from "../components/Sheet";
 import { A4Preview } from "../components/A4Preview";
@@ -20,11 +21,13 @@ export function Invoices() {
   const invoices =
     useLiveQuery(() => db.invoices.where("period").equals(period).toArray(), [period]) ?? [];
   const [blocks, setBlocks] = useState<TermBlock[]>([]);
+  const [closures, setClosures] = useState<Closure[]>([]);
   const [business, setBiz] = useState<Business | null>(null);
   const [open, setOpen] = useState<ChildContract | null>(null);
 
   useEffect(() => {
     getTermBlocks().then(setBlocks);
+    getClosures().then(setClosures);
     getBusiness().then(setBiz);
   }, []);
 
@@ -85,6 +88,7 @@ export function Invoices() {
             child={open}
             period={period}
             blocks={blocks}
+            closures={closures}
             business={business}
             saved={latestFor(open)}
           />
@@ -98,12 +102,14 @@ function InvoiceDetail({
   child,
   period,
   blocks,
+  closures,
   business,
   saved,
 }: {
   child: ChildContract;
   period: string;
   blocks: TermBlock[];
+  closures: Closure[];
   business: Business;
   saved: Invoice | undefined;
 }) {
@@ -118,9 +124,9 @@ function InvoiceDetail({
       .equals(child.id!)
       .toArray()
       .then((logs) => {
-        setPreview(buildMonthInvoice(child, period, logs, blocks));
+        setPreview(buildMonthInvoice(child, period, logs, blocks, closures));
       });
-  }, [child, period, blocks]);
+  }, [child, period, blocks, closures]);
 
   if (!preview) return <p className="hint">Working it out…</p>;
 

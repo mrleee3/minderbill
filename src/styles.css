@@ -27,7 +27,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 
 body {
   overflow-x: hidden;
@@ -41,7 +41,13 @@ body {
   overscroll-behavior: none;
 }
 
-#root { min-height: 100dvh; display: flex; flex-direction: column; }
+#root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
 
 .app-header {
   padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 10px;
@@ -60,11 +66,14 @@ body {
 .build-id { font-size: 11px; color: var(--ink-60); font-variant-numeric: tabular-nums; }
 
 .screen {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 4px 18px 24px;
   overflow-y: auto;
   overflow-x: hidden;
-  overscroll-behavior-x: none;
+  /* Contain the bounce here so the page itself never rubber-bands. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .screen h2 {
   font-family: var(--display);
@@ -94,6 +103,7 @@ body {
 
 /* ---- Tab bar ---- */
 .tabbar {
+  flex: none;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   border-top: 1px solid var(--mist);
@@ -525,3 +535,51 @@ body {
   display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
 }
 .field-head .link { font-size: 12px; }
+
+/* ---- Calendar: term shading and closure bars ---- */
+.month-day {
+  position: relative;
+  padding-top: 5px;
+}
+.month-day.out-of-term { background: repeating-linear-gradient(
+    -45deg, transparent 0 5px, rgba(30, 42, 50, 0.045) 5px 10px
+  ); }
+.month-day.out-of-term.busy {
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 5px, rgba(30, 42, 50, 0.045) 5px 10px),
+    var(--card);
+}
+.closure-bar {
+  position: absolute;
+  top: 3px; left: 4px; right: 4px;
+  height: 3px;
+  border-radius: 2px;
+}
+.legend {
+  display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+  font-size: 11px; color: var(--ink-60); margin: 2px 0 6px;
+}
+.legend span { display: flex; align-items: center; gap: 5px; }
+.swatch { width: 12px; height: 4px; border-radius: 2px; display: inline-block; }
+/* The legend shows the hatch used for days OUTSIDE term. */
+.swatch.term {
+  background: repeating-linear-gradient(-45deg, transparent 0 3px, rgba(30, 42, 50, 0.28) 3px 6px);
+  height: 12px; width: 12px; border-radius: 3px; border: 1px solid var(--mist);
+}
+.closure-note {
+  border-left: 3px solid var(--mist);
+  background: var(--card);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex; flex-direction: column; gap: 2px;
+  margin: 6px 0;
+}
+.closure-note strong { font-family: var(--display); font-size: 14px; }
+.closure-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border: 1px solid var(--mist);
+  border-radius: 10px; padding: 8px 12px;
+}
+.closure-row .swatch { width: 4px; height: 26px; border-radius: 2px; flex: none; }
+.closure-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.closure-label { font-family: var(--display); font-weight: 700; font-size: 14px; }

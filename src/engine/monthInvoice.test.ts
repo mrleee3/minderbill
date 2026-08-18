@@ -153,3 +153,27 @@ describe("funding summary", () => {
     expect(inv.summary.privateMinutes).toBe(0);
   });
 });
+
+
+describe("closures in invoices", () => {
+  it("charges a childminder-holiday closure per the child's policy (none)", () => {
+    const closures = [
+      { id: "h", kind: "minderHoliday" as const, start: "2026-09-07", end: "2026-09-11", label: "Away" },
+    ];
+    const inv = buildMonthInvoice(child, "2026-09", [], terms, closures);
+    const week = inv.trace.find((w) => w.monday === "2026-09-07")!;
+    expect(week.days.every((d) => d.chargeMinutes === 0)).toBe(true);
+    // No funded hours consumed on a week she was closed.
+    expect(week.days.every((d) => d.fundedMin === 0)).toBe(true);
+  });
+
+  it("charges a bank holiday per the bank-holiday policy", () => {
+    const charging = { ...child, policies: { ...child.policies, bankHoliday: "full" as const } };
+    const closures = [
+      { id: "b", kind: "bankHoliday" as const, start: "2026-09-07", end: "2026-09-07", label: "BH" },
+    ];
+    const inv = buildMonthInvoice(charging, "2026-09", [], terms, closures);
+    const week = inv.trace.find((w) => w.monday === "2026-09-07")!;
+    expect(week.days[0].chargeMinutes).toBe(570); // full charge
+  });
+});

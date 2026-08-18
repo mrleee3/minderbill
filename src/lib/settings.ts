@@ -1,5 +1,6 @@
 import { db, type ChildContract } from "../db";
 import { SURREY_TERMS_ALL, type TermBlock } from "../data/surrey";
+import { UK_BANK_HOLIDAYS, type Closure } from "../data/closures";
 
 export interface Business {
   name: string;
@@ -36,6 +37,15 @@ export async function getTermBlocks(): Promise<TermBlock[]> {
 
 export async function setTermBlocks(blocks: TermBlock[]): Promise<void> {
   await db.settings.put({ key: "termBlocks", value: blocks });
+}
+
+export async function getClosures(): Promise<Closure[]> {
+  const s = await db.settings.get("closures");
+  return (s?.value as Closure[]) ?? UK_BANK_HOLIDAYS;
+}
+
+export async function setClosures(list: Closure[]): Promise<void> {
+  await db.settings.put({ key: "closures", value: list });
 }
 
 // ---- Child colours (leaf green is reserved for funding) ----

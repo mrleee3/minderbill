@@ -138,3 +138,32 @@ describe("contract dates", () => {
     expect(resolveDay(bounded, "2026-08-17", log)).toBeNull();
   });
 });
+
+describe("closures", () => {
+  const closures = [
+    { id: "h1", kind: "minderHoliday" as const, start: "2026-08-17", end: "2026-08-21", label: "Summer break" },
+    { id: "b1", kind: "bankHoliday" as const, start: "2026-08-31", end: "2026-08-31", label: "Summer bank holiday" },
+  ];
+
+  it("turns planned days inside a closure into that absence", () => {
+    const r = resolveDay(child, "2026-08-17", undefined, closures)!; // Monday
+    expect(r.absence).toBe("minderHoliday");
+    expect(r.closureLabel).toBe("Summer break");
+    expect(r.minutes).toBe(570); // hours unchanged; policy decides the charge
+  });
+
+  it("marks bank holidays separately", () => {
+    expect(resolveDay(child, "2026-08-31", undefined, closures)!.absence).toBe("bankHoliday");
+  });
+
+  it("leaves days outside closures untouched", () => {
+    expect(resolveDay(child, "2026-08-24", undefined, closures)!.absence).toBeUndefined();
+  });
+
+  it("lets an explicit log override a closure", () => {
+    const log = { childId: 1, date: "2026-08-17", startMin: 480, endMin: 1050, confirmed: true };
+    const r = resolveDay(child, "2026-08-17", log, closures)!;
+    expect(r.absence).toBeUndefined();
+    expect(r.source).toBe("log");
+  });
+});

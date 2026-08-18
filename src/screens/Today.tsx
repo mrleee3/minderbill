@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract, type DayLog } from "../db";
 import { addDays, fmtDateLong, fmtHours, minToInput, todayISO } from "../lib/dates";
 import { resolveDay } from "../lib/schedule";
-import { childColour } from "../lib/settings";
+import { childColour, getClosures } from "../lib/settings";
+import { CLOSURE_COLOURS, CLOSURE_LABELS, closureOn, type Closure } from "../data/closures";
 import { Sheet } from "../components/Sheet";
 import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
@@ -12,12 +13,19 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
   const logs =
     useLiveQuery(() => db.dayLogs.where("date").equals(date).toArray(), [date]) ?? [];
   const [editing, setEditing] = useState<ChildContract | null>(null);
+  const [closures, setClosures] = useState<Closure[]>([]);
+
+  useEffect(() => {
+    getClosures().then(setClosures);
+  }, []);
+
+  const closure = closureOn(date, closures);
 
   const logFor = (c: ChildContract): DayLog | undefined =>
     logs.find((l) => l.childId === c.id);
 
   const rows = children
-    .map((c, i) => ({ child: c, colour: childColour(c, i), log: logFor(c), resolved: resolveDay(c, date, logFor(c)) }))
+    .map((c, i) => ({ child: c, colour: childColour(c, i), log: logFor(c), resolved: resolveDay(c, date, logFor(c), closures) }))
     .sort((a, b) => (a.resolved?.startMin ?? 9999) - (b.resolved?.startMin ?? 9999));
 
   const attending = rows.filter((r) => r.resolved);
@@ -41,6 +49,15 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </div>
         <button className="nav-btn" onClick={() => setDate(addDays(date, 1))} aria-label="Next day">›</button>
       </div>
+
+      {closure && (
+        <div className="closure-note" style={{ borderColor: CLOSURE_COLOURS[closure.kind] }}>
+          <strong>{closure.label}</strong>
+          <span className="hint">
+            Everyone is marked "{CLOSURE_LABELS[closure.kind]}". Tap a child to override.
+          </span>
+        </div>
+      )}
 
       {children.length === 0 && (
         <div className="empty">
@@ -106,7 +123,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
           <DayEditor
             child={editing}
             date={date}
-            resolved={resolveDay(editing, date, logFor(editing))}
+            resolved={resolveDay(editing, date, logFor(editing), closures)}
             log={logFor(editing)}
             onDone={() => setEditing(null)}
           />

@@ -1,5 +1,6 @@
 import type { AbsenceReason, ChildContract, DaySlot, DayLog } from "../db";
 import { weekdayIndex } from "./dates";
+import { closureOn, type Closure } from "../data/closures";
 
 // Log-by-exception: a DayLog is stored ONLY when the day differs from the
 // usual schedule (adjusted times, absence, or unplanned attendance). Days
@@ -13,6 +14,8 @@ export interface ResolvedDay {
   note?: string;
   /** "schedule" = virtual planned day; "log" = explicit stored exception. */
   source: "schedule" | "log";
+  /** Set when the absence came from a declared closure rather than a log. */
+  closureLabel?: string;
 }
 
 /** The schedule version in force on a date (latest fromDate <= iso). */
@@ -38,7 +41,8 @@ export function plannedSlot(child: ChildContract, iso: string): DaySlot | null {
 export function resolveDay(
   child: ChildContract,
   iso: string,
-  log: DayLog | undefined
+  log: DayLog | undefined,
+  closures: Closure[] = []
 ): ResolvedDay | null {
   // Outside the contract dates nothing is scheduled or chargeable, even if a
   // stale log exists.
@@ -55,11 +59,16 @@ export function resolveDay(
   }
   const slot = plannedSlot(child, iso);
   if (!slot) return null;
+  // A declared closure turns a planned day into the matching absence, unless
+  // an explicit log already said otherwise (handled above).
+  const closure = closureOn(iso, closures);
   return {
     startMin: slot.startMin,
     endMin: slot.endMin,
     minutes: Math.max(0, slot.endMin - slot.startMin),
+    absence: closure?.kind,
     source: "schedule",
+    closureLabel: closure?.label,
   };
 }
 
