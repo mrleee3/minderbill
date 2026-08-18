@@ -2,18 +2,8 @@ import { db, type ChildContract } from "../db";
 import { SURREY_TERMS_ALL, type TermBlock } from "../data/surrey";
 import { UK_BANK_HOLIDAYS, type Closure } from "../data/closures";
 
-export interface Business {
-  name: string;
-  tagline: string;
-  ownerName?: string;
-  ofstedReg?: string;
-  email?: string;
-  phone?: string;
-  bankName?: string;
-  sortCode?: string;
-  accountNo?: string;
-  paymentNote?: string;
-}
+export type { Business } from "./invoiceHtml";
+import type { Business } from "./invoiceHtml";
 
 export const DEFAULT_BUSINESS: Business = {
   name: "J.S. Nannies",

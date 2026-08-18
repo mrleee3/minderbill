@@ -1,17 +1,69 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract } from "../db";
 import { ageLabel, todayISO } from "../lib/dates";
 import { effectiveRatePence, scheduleSummary } from "../lib/schedule";
 import { formatPence } from "../engine/invoice";
 import { Sheet } from "../components/Sheet";
+import { ChildForm } from "../components/ChildForm";
+import { InvoiceHistory } from "../components/InvoiceHistory";
+import { Collapsible } from "../components/Collapsible";
 import { childColour } from "../lib/settings";
 import { addDemoChildren } from "../lib/demo";
-import { ChildForm } from "../components/ChildForm";
+import { IconInvoices } from "../components/Icons";
+
+type SheetState =
+  | { mode: "closed" }
+  | { mode: "new" }
+  | { mode: "edit"; child: ChildContract }
+  | { mode: "invoices"; child: ChildContract };
 
 export function Children() {
   const children = useLiveQuery(() => db.children.toArray(), []) ?? [];
-  const [sheet, setSheet] = useState<"closed" | "new" | ChildContract>("closed");
+  const [sheet, setSheet] = useState<SheetState>({ mode: "closed" });
+  const today = todayISO();
+
+  // Keep the open sheet in step with live edits (e.g. after saving).
+  useEffect(() => {
+    if (sheet.mode !== "edit" && sheet.mode !== "invoices") return;
+    const fresh = children.find((c) => c.id === sheet.child.id);
+    if (fresh && fresh !== sheet.child) setSheet({ ...sheet, child: fresh });
+  }, [children]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hasLeft = (c: ChildContract) => !!c.endDate && c.endDate < today;
+  const active = children.filter((c) => !hasLeft(c));
+  const archived = children.filter(hasLeft);
+
+  const card = (c: ChildContract, i: number, archivedCard = false) => (
+    <div key={c.id} className={`child-card${archivedCard ? " archived" : ""}`}>
+      <button className="card-tap" onClick={() => setSheet({ mode: "edit", child: c })}>
+        <span className="avatar" style={{ background: childColour(c, i) }}>
+          <span className="avatar-letter">{c.name[0]?.toUpperCase()}</span>
+        </span>
+        <span className="card-main">
+          <span className="card-name">
+            {c.name}
+            {c.dob && <span className="age"> ({ageLabel(c.dob, today)})</span>}
+          </span>
+          <span className="card-time hours">
+            {formatPence(effectiveRatePence(c, today))}/hr
+            <span className="dot-sep">·</span>
+            {scheduleSummary(c, today)}
+          </span>
+          {archivedCard && c.endDate && (
+            <span className="card-note">Left {c.endDate}</span>
+          )}
+        </span>
+      </button>
+      <button
+        className="card-action"
+        aria-label={`Invoices for ${c.name}`}
+        onClick={() => setSheet({ mode: "invoices", child: c })}
+      >
+        <IconInvoices />
+      </button>
+    </div>
+  );
 
   return (
     <>
@@ -22,35 +74,18 @@ export function Children() {
           <p>Each child gets a contract: hourly rate, usual weekly hours, funded hours and charging policies.</p>
         </div>
       ) : (
-        children.map((c, i) => (
-          <button key={c.id} className="child-card" onClick={() => setSheet(c)}>
-            <span className="avatar" style={{ background: childColour(c, i) }}>
-              <span className="avatar-letter">{c.name[0]?.toUpperCase()}</span>
-            </span>
-            <span className="card-main">
-              <span className="card-name">
-                {c.name}
-                {c.dob && <span className="age"> ({ageLabel(c.dob, todayISO())})</span>}
-              </span>
-              <span className="card-time hours">
-                {formatPence(effectiveRatePence(c, todayISO()))}/hr
-                <span className="dot-sep">·</span>
-                {scheduleSummary(c, todayISO())}
-              </span>
-            </span>
-            {c.endDate && c.endDate < todayISO() && (
-              <span className="status-chip absent">Left</span>
-            )}
-            {c.funding && (!c.endDate || c.endDate >= todayISO()) && (
-              <span className="status-chip funded">
-                {c.funding.fundedMinutesPerWeek / 60} h funded
-              </span>
-            )}
-          </button>
-        ))
+        active.map((c, i) => card(c, i))
       )}
 
-      <button className="btn-primary" onClick={() => setSheet("new")}>
+      {archived.length > 0 && (
+        <div className="archived-block">
+          <Collapsible title="No longer attending" count={archived.length}>
+            {archived.map((c, i) => card(c, active.length + i, true))}
+          </Collapsible>
+        </div>
+      )}
+
+      <button className="btn-primary" onClick={() => setSheet({ mode: "new" })}>
         + Add child
       </button>
       {children.length === 0 && (
@@ -60,16 +95,25 @@ export function Children() {
       )}
 
       <Sheet
-        open={sheet !== "closed"}
-        title={sheet === "new" ? "Add child" : sheet !== "closed" ? sheet.name : ""}
-        onClose={() => setSheet("closed")}
+        open={sheet.mode !== "closed"}
+        title={
+          sheet.mode === "new"
+            ? "Add child"
+            : sheet.mode === "invoices"
+              ? `${sheet.child.name} — invoices`
+              : sheet.mode === "edit"
+                ? sheet.child.name
+                : ""
+        }
+        onClose={() => setSheet({ mode: "closed" })}
       >
-        {sheet !== "closed" && (
-          <ChildForm
-            existing={sheet === "new" ? null : sheet}
-            onDone={() => setSheet("closed")}
-          />
+        {sheet.mode === "new" && (
+          <ChildForm existing={null} onDone={() => setSheet({ mode: "closed" })} />
         )}
+        {sheet.mode === "edit" && (
+          <ChildForm existing={sheet.child} onDone={() => setSheet({ mode: "closed" })} />
+        )}
+        {sheet.mode === "invoices" && <InvoiceHistory child={sheet.child} />}
       </Sheet>
     </>
   );

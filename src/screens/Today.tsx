@@ -11,7 +11,9 @@ import { Sheet } from "../components/Sheet";
 import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
 export function Today({ date, setDate }: { date: string; setDate: (d: string) => void }) {
-  const children = useLiveQuery(() => db.children.toArray(), []) ?? [];
+  const allChildren = useLiveQuery(() => db.children.toArray(), []) ?? [];
+  // Children who have left are archived — hide them once past their end date.
+  const children = allChildren.filter((c) => !c.endDate || c.endDate >= date);
   const logs =
     useLiveQuery(() => db.dayLogs.where("date").equals(date).toArray(), [date]) ?? [];
   const [editing, setEditing] = useState<ChildContract | null>(null);

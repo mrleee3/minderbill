@@ -21,15 +21,21 @@ import { useEffect } from "react";
 import { getClosures, getTermBlocks } from "../lib/settings";
 import { CLOSURE_COLOURS, CLOSURE_LABELS, closureOn, type Closure } from "../data/closures";
 import type { TermBlock } from "../data/surrey";
-import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
+import { ABSENCE_LABELS } from "../components/DayEditor";
+import { ChildMonthHistory } from "../components/ChildMonthHistory";
+import { useSwipe } from "../lib/useSwipe";
 
 export function Month() {
   const [viewDate, setViewDate] = useState(todayISO());
   const [selDay, setSelDay] = useState(todayISO());
   const [editing, setEditing] = useState<ChildContract | null>(null);
 
-  const children = useLiveQuery(() => db.children.toArray(), []) ?? [];
+  const allChildren = useLiveQuery(() => db.children.toArray(), []) ?? [];
   const [closures, setClosureList] = useState<Closure[]>([]);
+  // Show a child in a month if their contract overlapped any of it.
+  const children = allChildren.filter(
+    (c) => !c.endDate || c.endDate >= viewDate.slice(0, 8) + "01"
+  );
   const [terms, setTerms] = useState<TermBlock[]>([]);
 
   useEffect(() => {
@@ -56,6 +62,7 @@ export function Month() {
     setSelDay(next.slice(0, 7) === today.slice(0, 7) ? today : next);
   };
 
+  const swipe = useSwipe(() => shiftMonth(1), () => shiftMonth(-1));
   const leading = weekdayIndex(days[0]);
   const totalMinutes = days.reduce((sum, iso) => {
     for (const c of children) {
@@ -82,7 +89,7 @@ export function Month() {
         <button className="nav-btn" onClick={() => shiftMonth(1)} aria-label="Next month">›</button>
       </div>
 
-      <div className="month-grid">
+      <div className="month-grid" {...swipe}>
         {WEEKDAY_LABELS.map((w) => (
           <span key={w} className="month-head">{w[0]}</span>
         ))}
@@ -192,17 +199,11 @@ export function Month() {
 
       <Sheet
         open={!!editing}
-        title={editing ? `${editing.name} — ${fmtDateLong(selDay)}` : ""}
+        title={editing ? `${editing.name} — ${monthLabel(viewDate)}` : ""}
         onClose={() => setEditing(null)}
       >
         {editing && (
-          <DayEditor
-            child={editing}
-            date={selDay}
-            resolved={resolveDay(editing, selDay, logFor(editing, selDay), closures)}
-            log={logFor(editing, selDay)}
-            onDone={() => setEditing(null)}
-          />
+          <ChildMonthHistory child={editing} month={viewDate} closures={closures} />
         )}
       </Sheet>
     </>

@@ -633,3 +633,60 @@ body.sheet-open .tabbar {
 .collapse-body .collapsible { background: var(--paper); }
 .collapse-body .btn-quiet { margin-top: 2px; }
 .age { color: var(--ink-60); font-weight: 500; font-size: 13px; }
+
+/* ---- Inputs: keep empty date fields the same size as filled ones ---- */
+.form input { min-height: 44px; }
+.form input[type="date"], .form input[type="time"] {
+  min-height: 44px; line-height: 22px; display: block;
+}
+.form input[type="date"]::-webkit-date-and-time-value {
+  min-height: 22px; text-align: center; width: 100%;
+}
+
+/* ---- Child card with a trailing action button ---- */
+.child-card { padding: 0; overflow: hidden; }
+.card-tap {
+  appearance: none; border: 0; background: none; font: inherit; color: inherit;
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px;
+  padding: 12px 4px 12px 14px; text-align: left; cursor: pointer;
+}
+.card-action {
+  appearance: none; border: 0; border-left: 1px solid var(--mist);
+  background: none; color: var(--ink-60);
+  align-self: stretch; padding: 0 16px; cursor: pointer;
+  display: flex; align-items: center;
+}
+.card-action svg { width: 22px; height: 22px; }
+.card-action:active { background: var(--marigold-soft); color: var(--ink); }
+/* Cards that are still plain buttons (Today, Month) keep their padding. */
+button.child-card { padding: 12px 14px; }
+
+/* ---- Archived children ---- */
+.archived-block { margin: 14px 0 4px; }
+.child-card.archived { opacity: 0.62; background: transparent; border-style: dashed; }
+.child-card.archived .avatar { filter: grayscale(0.7); }
+
+/* ---- Month history list ---- */
+.history-summary {
+  display: flex; justify-content: space-around; gap: 8px;
+  background: var(--card); border: 1px solid var(--mist);
+  border-radius: var(--radius); padding: 12px 10px; margin-bottom: 10px;
+  font-size: 13px; color: var(--ink-60); text-align: center;
+}
+.history-summary strong { display: block; color: var(--ink); font-size: 17px; font-family: var(--display); }
+.history-list { display: flex; flex-direction: column; gap: 6px; }
+.history-row {
+  appearance: none; border: 1px solid var(--mist); background: var(--card);
+  border-radius: 10px; padding: 10px 12px; font: inherit; color: inherit;
+  display: grid; grid-template-columns: 1fr auto auto; gap: 10px;
+  align-items: center; text-align: left; cursor: pointer;
+}
+.history-date { font-family: var(--display); font-weight: 600; font-size: 14px; }
+.history-hours { font-size: 13px; color: var(--ink-60); }
+
+/* ---- Invoice period picker ---- */
+.period-picker {
+  font: inherit; color: var(--ink); background: var(--card);
+  border: 1px solid var(--mist); border-radius: 10px; padding: 10px 12px;
+  width: 100%; min-height: 44px;
+}
