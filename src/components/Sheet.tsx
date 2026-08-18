@@ -16,7 +16,11 @@ export function Sheet({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.body.classList.add("sheet-open");
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.classList.remove("sheet-open");
+    };
   }, [open, onClose]);
 
   if (!open) return null;

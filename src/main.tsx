@@ -11,6 +11,17 @@ function setAppHeight() {
 setAppHeight();
 window.addEventListener("orientationchange", () => setTimeout(setAppHeight, 250));
 window.addEventListener("pageshow", setAppHeight);
+window.addEventListener("load", () => {
+  setAppHeight();
+  // iOS can resolve safe-area insets a beat after load, especially on a
+  // reload triggered by the update banner.
+  setTimeout(setAppHeight, 300);
+  setTimeout(setAppHeight, 1000);
+});
+visualViewport?.addEventListener("resize", () => {
+  // Ignore keyboard-driven shrinks; only track real viewport changes.
+  if ((visualViewport?.height ?? 0) > window.innerHeight * 0.75) setAppHeight();
+});
 
 import { createRoot } from "react-dom/client";
 import App from "./App";
