@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChildContract, DayLog } from "../db";
-import { effectiveRatePence, plannedSlot, resolveDay, scheduleSummary } from "./schedule";
+import { effectiveRatePence, plannedSlot, resolveDay, scheduleOn, scheduleSummary } from "./schedule";
 
 const child: ChildContract = {
   id: 1,
@@ -10,14 +10,19 @@ const child: ChildContract = {
     { fromDate: "2026-09-01", pencePerHour: 800 },
   ],
   // Mon–Wed 8:00–17:30
-  schedule: [
-    { startMin: 480, endMin: 1050 },
-    { startMin: 480, endMin: 1050 },
-    { startMin: 480, endMin: 1050 },
-    null,
-    null,
-    null,
-    null,
+  schedules: [
+    {
+      fromDate: "2026-01-01",
+      days: [
+        { startMin: 480, endMin: 1050 },
+        { startMin: 480, endMin: 1050 },
+        { startMin: 480, endMin: 1050 },
+        null,
+        null,
+        null,
+        null,
+      ],
+    },
   ],
   funding: null,
   policies: {
@@ -85,6 +90,51 @@ describe("effectiveRatePence", () => {
 
 describe("scheduleSummary", () => {
   it("collapses consecutive days into a range", () => {
-    expect(scheduleSummary(child)).toBe("Mon–Wed · 28.5 h/wk");
+    expect(scheduleSummary(child, "2026-08-18")).toBe("Mon–Wed · 28.5 h/wk");
+  });
+});
+
+
+describe("versioned schedules", () => {
+  const changed = {
+    ...child,
+    schedules: [
+      ...child.schedules,
+      {
+        fromDate: "2026-09-01",
+        days: [
+          { startMin: 540, endMin: 900 },
+          { startMin: 540, endMin: 900 },
+          null,
+          null,
+          null,
+          null,
+          null,
+        ],
+      },
+    ],
+  };
+
+  it("uses the pattern in force on the date", () => {
+    expect(scheduleOn(changed, "2026-08-31")[2]).not.toBeNull(); // Wed still on
+    expect(scheduleOn(changed, "2026-09-01")[2]).toBeNull(); // Wed dropped
+    expect(resolveDay(changed, "2026-08-19", undefined)!.minutes).toBe(570); // old Wed
+    expect(resolveDay(changed, "2026-09-02", undefined)).toBeNull(); // new: no Wed
+    expect(resolveDay(changed, "2026-09-01", undefined)!.minutes).toBe(360); // new Tue 9–15
+  });
+});
+
+describe("contract dates", () => {
+  const bounded = { ...child, startDate: "2026-02-01", endDate: "2026-08-14" };
+
+  it("has no scheduled hours before the start date or after the end date", () => {
+    expect(resolveDay(bounded, "2026-01-19", undefined)).toBeNull(); // a Monday, pre-start
+    expect(resolveDay(bounded, "2026-08-17", undefined)).toBeNull(); // Monday after leaving
+    expect(resolveDay(bounded, "2026-08-10", undefined)).not.toBeNull();
+  });
+
+  it("ignores stale logs outside the contract dates", () => {
+    const log = { childId: 1, date: "2026-08-17", startMin: 480, endMin: 1050, confirmed: true };
+    expect(resolveDay(bounded, "2026-08-17", log)).toBeNull();
   });
 });

@@ -112,13 +112,13 @@ body {
   gap: 2px;
   cursor: pointer;
 }
-.tab .icon { font-size: 20px; line-height: 1; }
+.tab svg { display: block; width: 24px; height: 24px; }
 .tab.active { color: var(--ink); }
 .tab.active .icon-wrap {
   background: var(--marigold-soft);
   border-radius: 10px;
 }
-.tab .icon-wrap { padding: 3px 14px; }
+.tab .icon-wrap { padding: 3px 14px; display: flex; }
 
 /* ---- Update banner (red restart pill, Waymark pattern) ---- */
 .update-pill {
@@ -380,6 +380,81 @@ body {
   .letter .pay strong { display: block; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; color: #777; }
   .letter .foot { margin-top: 26px; font-size: 11px; color: #888; font-style: italic; }
 }
+
+/* ---- Funding summary panel ---- */
+.fund-panel {
+  background: var(--leaf-soft); border: 1px solid rgba(78, 155, 111, 0.3);
+  border-radius: var(--radius); padding: 12px 14px;
+}
+.fund-panel.none { background: var(--mist); border-color: var(--mist); }
+.fund-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-family: var(--display); font-weight: 800; font-size: 14px; margin-bottom: 8px;
+}
+.fund-head .hours { font-size: 12px; font-weight: 600; color: var(--ink-60); }
+.fund-bars { display: flex; flex-direction: column; gap: 3px; }
+.fund-bar { display: flex; justify-content: space-between; font-size: 13px; }
+.fund-bar.indent { padding-left: 12px; color: var(--ink-60); font-size: 12px; }
+.fund-bar .leaf { color: var(--leaf); font-weight: 700; }
+.fund-panel .hint { margin-top: 8px; }
+
+/* ---- Inline A4 preview ----
+   The letter is rendered at true A4 (794x1123 CSS px at 96dpi) and scaled
+   down with a transform, so the on-screen preview is the printed page. */
+.a4-frame {
+  width: 100%;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  border: 1px solid var(--mist);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(30, 42, 50, 0.08);
+}
+.a4-page {
+  width: 794px;
+  height: 1123px;
+  padding: 56px 60px;
+  transform-origin: top left;
+  /* 794px scaled to the frame width; --a4-scale set in JS-free CSS below */
+  transform: scale(var(--a4-scale, 0.42));
+}
+.a4-page .letter { font-family: Georgia, "Times New Roman", serif; color: #1a1a1a; }
+.a4-page .letter header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  border-bottom: 3px solid #1e2a32; padding-bottom: 14px; margin-bottom: 22px;
+}
+.a4-page .letter h1 { font-size: 30px; margin: 0; }
+.a4-page .letter .tagline { margin: 2px 0 0; font-style: italic; color: #555; font-size: 15px; }
+.a4-page .letter .from { text-align: right; font-size: 12px; color: #444; line-height: 1.5; }
+.a4-page .letter h2 {
+  font-size: 15px; text-transform: uppercase; letter-spacing: 0.18em; margin: 0 0 12px;
+}
+.a4-page .letter .meta { font-size: 13px; margin-bottom: 18px; }
+.a4-page .letter .meta div { display: flex; gap: 8px; padding: 1px 0; }
+.a4-page .letter .meta span { width: 110px; color: #777; }
+.a4-page .letter table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.a4-page .letter th {
+  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+  color: #777; border-bottom: 1px solid #999; padding: 6px 8px;
+}
+.a4-page .letter td { padding: 8px; border-bottom: 1px solid #ddd; }
+.a4-page .letter .num { text-align: right; font-variant-numeric: tabular-nums; }
+.a4-page .letter tfoot td {
+  border-top: 2px solid #1e2a32; border-bottom: 0; font-weight: 700; font-size: 15px;
+}
+.a4-page .letter .pay { margin-top: 22px; font-size: 13px; line-height: 1.6; }
+.a4-page .letter .pay strong {
+  display: block; text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; color: #777;
+}
+.a4-page .letter .note {
+  margin-top: 18px; font-size: 12px; line-height: 1.55;
+  border-left: 3px solid #4E9B6F; padding-left: 10px;
+}
+.a4-page .letter .note strong {
+  display: block; text-transform: uppercase; font-size: 10px; letter-spacing: 0.08em;
+  color: #777; margin-bottom: 2px;
+}
+.a4-page .letter .foot { margin-top: 26px; font-size: 11px; color: #888; font-style: italic; }
 
 /* ---- Funding summary panel ---- */
 .fund-panel {

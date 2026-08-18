@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
+import {
+  IconChildren,
+  IconInvoices,
+  IconMonth,
+  IconSettings,
+  IconToday,
+} from "./components/Icons";
 import { Today } from "./screens/Today";
 import { Month } from "./screens/Month";
 import { Children } from "./screens/Children";
@@ -9,12 +16,12 @@ import { todayISO } from "./lib/dates";
 
 type Tab = "today" | "month" | "invoices" | "children" | "settings";
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "today", label: "Today", icon: "☀️" },
-  { id: "month", label: "Month", icon: "🗓️" },
-  { id: "invoices", label: "Invoices", icon: "📄" },
-  { id: "children", label: "Children", icon: "🧒" },
-  { id: "settings", label: "Settings", icon: "⚙️" },
+const TABS: { id: Tab; label: string; Icon: (p: { active?: boolean }) => JSX.Element }[] = [
+  { id: "today", label: "Today", Icon: IconToday },
+  { id: "month", label: "Month", Icon: IconMonth },
+  { id: "invoices", label: "Invoices", Icon: IconInvoices },
+  { id: "children", label: "Children", Icon: IconChildren },
+  { id: "settings", label: "Settings", Icon: IconSettings },
 ];
 
 
@@ -65,7 +72,7 @@ export default function App() {
             onClick={() => setTab(t.id)}
           >
             <span className="icon-wrap">
-              <span className="icon">{t.icon}</span>
+              <t.Icon active={tab === t.id} />
             </span>
             {t.label}
           </button>

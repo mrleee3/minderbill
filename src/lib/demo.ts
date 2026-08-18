@@ -17,7 +17,7 @@ export async function addDemoChildren(): Promise<void> {
     dob: "2023-03-14",
     startDate: "2026-01-05",
     rates: [{ fromDate: "2026-01-05", pencePerHour: 800 }],
-    schedule: [slot, slot, slot, null, null, null, null],
+    schedules: [{ fromDate: "2026-01-05", days: [slot, slot, slot, null, null, null, null] }],
     funding: {
       fundedMinutesPerWeek: 900,
       model: "term-time",
@@ -42,7 +42,7 @@ export async function addDemoChildren(): Promise<void> {
     dob: "2024-06-02",
     startDate: "2026-04-13",
     rates: [{ fromDate: "2026-04-13", pencePerHour: 850 }],
-    schedule: [null, null, null, short, short, null, null],
+    schedules: [{ fromDate: "2026-04-13", days: [null, null, null, short, short, null, null] }],
     funding: {
       fundedMinutesPerWeek: 720,
       model: "term-time",

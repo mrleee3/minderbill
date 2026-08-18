@@ -7,6 +7,7 @@ import { formatPence } from "../engine/invoice";
 import { getBusiness, getTermBlocks, childColour, type Business } from "../lib/settings";
 import { ABSENCE_LABELS } from "../components/DayEditor";
 import { Sheet } from "../components/Sheet";
+import { A4Preview } from "../components/A4Preview";
 import type { TermBlock } from "../data/surrey";
 
 function prevMonthPeriod(): string {
@@ -108,7 +109,6 @@ function InvoiceDetail({
 }) {
   const [preview, setPreview] = useState<MonthInvoiceResult | null>(null);
   const [showTrace, setShowTrace] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     // All of this child's logs; the engine only reads the weeks that
@@ -272,19 +272,19 @@ function InvoiceDetail({
         </div>
       )}
 
-      {/* ---- Inline preview of the printed invoice ---- */}
-      {locked && (
+      {/* ---- Inline A4 preview: always shown ---- */}
+      {lines.length > 0 && (
         <>
-          <button className="btn-quiet" onClick={() => setShowPreview((v) => !v)}>
-            {showPreview ? "Hide invoice preview" : "Preview the invoice"}
-          </button>
-          {showPreview && (
-            <div
-              className="paper-preview"
-              dangerouslySetInnerHTML={{
-                __html: renderPrintHTML(child, period, lines, total, business, saved!.version),
-              }}
-            />
+          <div className="form-section">
+            {locked ? `Invoice preview \u00b7 v${saved!.version}` : "Preview \u00b7 draft"}
+          </div>
+          <A4Preview
+            html={renderPrintHTML(child, period, lines, total, business, saved?.version ?? 1)}
+          />
+          {!locked && (
+            <p className="hint">
+              Draft — generate to lock this version before sending.
+            </p>
           )}
         </>
       )}

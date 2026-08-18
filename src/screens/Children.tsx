@@ -32,10 +32,13 @@ export function Children() {
               <span className="card-time hours">
                 {formatPence(effectiveRatePence(c, todayISO()))}/hr
                 <span className="dot-sep">·</span>
-                {scheduleSummary(c)}
+                {scheduleSummary(c, todayISO())}
               </span>
             </span>
-            {c.funding && (
+            {c.endDate && c.endDate < todayISO() && (
+              <span className="status-chip absent">Left</span>
+            )}
+            {c.funding && (!c.endDate || c.endDate >= todayISO()) && (
               <span className="status-chip funded">
                 {c.funding.fundedMinutesPerWeek / 60} h funded
               </span>

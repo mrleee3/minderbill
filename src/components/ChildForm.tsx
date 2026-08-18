@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { db, type ChildContract } from "../db";
+import { db, type ChildContract, type DaySlot } from "../db";
 import { WEEKDAY_LABELS, inputToMin, minToInput, todayISO } from "../lib/dates";
-import { effectiveRatePence } from "../lib/schedule";
+import { effectiveRatePence, scheduleOn } from "../lib/schedule";
 import { formatPence } from "../engine/invoice";
 import { BAND_LABELS, ageBandOn, surreyRateFor } from "../data/surrey";
 import { nextColour } from "../lib/settings";
@@ -39,9 +39,14 @@ export function ChildForm({
   const [dob, setDob] = useState(existing?.dob ?? "");
   const [rateStr, setRateStr] = useState(penceToPounds(currentRate));
   const [rateFrom, setRateFrom] = useState(today);
-  const [schedule, setSchedule] = useState<ChildContract["schedule"]>(
-    existing?.schedule ?? [DEFAULT_SLOT, DEFAULT_SLOT, DEFAULT_SLOT, DEFAULT_SLOT, DEFAULT_SLOT, null, null]
+  const [startDate, setStartDate] = useState(existing?.startDate ?? today);
+  const [endDate, setEndDate] = useState(existing?.endDate ?? "");
+  const [schedule, setSchedule] = useState<(DaySlot | null)[]>(
+    existing
+      ? scheduleOn(existing, today)
+      : [DEFAULT_SLOT, DEFAULT_SLOT, DEFAULT_SLOT, DEFAULT_SLOT, DEFAULT_SLOT, null, null]
   );
+  const [schedFrom, setSchedFrom] = useState(existing?.startDate ?? today);
   const [funded, setFunded] = useState(!!existing?.funding);
   const [fundedHours, setFundedHours] = useState(
     existing?.funding ? String(existing.funding.fundedMinutesPerWeek / 60) : "15"
@@ -83,8 +88,12 @@ export function ChildForm({
     return Math.max(0, min - la);
   }, [funded, laRateStr, minEffStr]);
 
-  const setDay = (i: number, slot: { startMin: number; endMin: number } | null) =>
-    setSchedule((s) => s.map((x, j) => (j === i ? slot : x)));
+  const setDay = (i: number, slot: DaySlot | null) =>
+    setSchedule((s: (DaySlot | null)[]) => s.map((x, j) => (j === i ? slot : x)));
+
+  const currentSchedule = existing ? scheduleOn(existing, today) : null;
+  const scheduleChanged =
+    !!currentSchedule && JSON.stringify(currentSchedule) !== JSON.stringify(schedule);
 
   async function save() {
     const ratePence = poundsToPence(rateStr);
@@ -97,14 +106,26 @@ export function ChildForm({
       rates = [...rates, { fromDate: rateFrom, pencePerHour: ratePence }];
     }
 
+    let schedules = existing?.schedules ?? [];
+    if (!existing) {
+      schedules = [{ fromDate: startDate, days: schedule }];
+    } else if (scheduleChanged) {
+      // Replace a version with the same start date, otherwise add a new one.
+      schedules = [
+        ...schedules.filter((v) => v.fromDate !== schedFrom),
+        { fromDate: schedFrom, days: schedule },
+      ].sort((a, b) => a.fromDate.localeCompare(b.fromDate));
+    }
+
     const contract: ChildContract = {
       ...(existing ?? {}),
       name: name.trim(),
       color: existing?.color ?? nextColour(allChildren),
       dob: dob || undefined,
-      startDate: existing?.startDate ?? today,
+      startDate,
+      endDate: endDate || undefined,
       rates,
-      schedule,
+      schedules,
       funding: funded
         ? {
             fundedMinutesPerWeek: Math.round(parseFloat(fundedHours || "0") * 60),
@@ -144,6 +165,23 @@ export function ChildForm({
         <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
       </label>
 
+      <div className="form-section">Contract dates</div>
+      <div className="field-row">
+        <label className="field">
+          <span>Start date</span>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        </label>
+        <label className="field">
+          <span>End date (when leaving)</span>
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </label>
+      </div>
+      <p className="hint">
+        {endDate
+          ? `No hours are scheduled or charged after ${endDate}.`
+          : "Leave the end date blank while they're still with you."}
+      </p>
+
       <div className="form-section">Hourly rate</div>
       <div className="field-row">
         <label className="field">
@@ -163,6 +201,28 @@ export function ChildForm({
       )}
 
       <div className="form-section">Usual week</div>
+      {existing && (
+        <>
+          <label className="field">
+            <span>These hours apply from</span>
+            <input type="date" value={schedFrom} onChange={(e) => setSchedFrom(e.target.value)} />
+          </label>
+          {scheduleChanged ? (
+            <p className="hint">
+              Hours changed — days before {schedFrom} keep the old pattern, so past invoices stay
+              exactly as they were.
+            </p>
+          ) : (
+            existing.schedules.length > 1 && (
+              <p className="hint">
+                {existing.schedules.length} versions on file (from{" "}
+                {existing.schedules.map((v) => v.fromDate).join(", ")}). Showing the pattern in force
+                today.
+              </p>
+            )
+          )}
+        </>
+      )}
       {WEEKDAY_LABELS.map((label, i) => {
         const slot = schedule[i];
         return (

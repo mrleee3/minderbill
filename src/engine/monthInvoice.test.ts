@@ -9,14 +9,19 @@ const child: ChildContract = {
   id: 1,
   name: "Ava",
   rates: [{ fromDate: "2026-01-01", pencePerHour: 800 }],
-  schedule: [
-    { startMin: 480, endMin: 1050 },
-    { startMin: 480, endMin: 1050 },
-    { startMin: 480, endMin: 1050 },
-    null,
-    null,
-    null,
-    null,
+  schedules: [
+    {
+      fromDate: "2026-01-01",
+      days: [
+        { startMin: 480, endMin: 1050 },
+        { startMin: 480, endMin: 1050 },
+        { startMin: 480, endMin: 1050 },
+        null,
+        null,
+        null,
+        null,
+      ],
+    },
   ],
   funding: {
     fundedMinutesPerWeek: 900,
@@ -138,7 +143,9 @@ describe("funding summary", () => {
   it("reports unused funded allowance when attendance is below the cap", () => {
     const partTime: ChildContract = {
       ...child,
-      schedule: [{ startMin: 540, endMin: 780 }, null, null, null, null, null, null], // 4h Mon
+      schedules: [
+        { fromDate: "2026-01-01", days: [{ startMin: 540, endMin: 780 }, null, null, null, null, null, null] },
+      ], // 4h Mon
     };
     const inv = buildMonthInvoice(partTime, "2026-09", [], terms);
     // 240 min attended vs 900 cap → 660 unused each week that touches Sept.
