@@ -19,6 +19,7 @@ import {
   type ClosureKind,
 } from "../data/closures";
 import { getClosures, setClosures as saveClosures } from "../lib/settings";
+import { Collapsible } from "../components/Collapsible";
 import { fmtDateLong } from "../lib/dates";
 import { addDemoChildren, removeDemoData } from "../lib/demo";
 import { todayISO } from "../lib/dates";
@@ -159,45 +160,47 @@ export function Settings() {
         Funded hours only apply on days inside these blocks. Check them against Surrey's Early
         Years Funded Dates calendar — INSET days are not funded.
       </p>
-      {blocks.map((b, i) => (
-        <div key={i} className="term-row">
-          <input
-            type="date"
-            value={b.start}
-            onChange={(e) => saveBlocks(blocks.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)))}
-          />
-          <span className="dash">–</span>
-          <input
-            type="date"
-            value={b.end}
-            onChange={(e) => saveBlocks(blocks.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)))}
-          />
-          <button
-            className="sheet-close"
-            aria-label={`Remove ${b.label}`}
-            onClick={() => saveBlocks(blocks.filter((_, j) => j !== i))}
-          >
-            ✕
+      <Collapsible title="Term blocks" count={blocks.length}>
+        {blocks.map((b, i) => (
+          <div key={i} className="term-row">
+            <input
+              type="date"
+              value={b.start}
+              onChange={(e) => saveBlocks(blocks.map((x, j) => (j === i ? { ...x, start: e.target.value } : x)))}
+            />
+            <span className="dash">–</span>
+            <input
+              type="date"
+              value={b.end}
+              onChange={(e) => saveBlocks(blocks.map((x, j) => (j === i ? { ...x, end: e.target.value } : x)))}
+            />
+            <button
+              className="sheet-close"
+              aria-label={`Remove ${b.label}`}
+              onClick={() => saveBlocks(blocks.filter((_, j) => j !== i))}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <button
+          className="btn-quiet"
+          onClick={() => saveBlocks([...blocks, { start: todayISO(), end: todayISO(), label: "Custom" }])}
+        >
+          + Add term block
+        </button>
+        <div className="field-row">
+          <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_ALL)}>
+            Reset to Surrey (both years)
+          </button>
+          <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_2025_26)}>
+            2025/26 only
+          </button>
+          <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_2026_27)}>
+            2026/27 only
           </button>
         </div>
-      ))}
-      <button
-        className="btn-quiet"
-        onClick={() => saveBlocks([...blocks, { start: todayISO(), end: todayISO(), label: "Custom" }])}
-      >
-        + Add term block
-      </button>
-      <div className="field-row">
-        <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_ALL)}>
-          Reset to Surrey (both years)
-        </button>
-        <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_2025_26)}>
-          2025/26 only
-        </button>
-        <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_2026_27)}>
-          2026/27 only
-        </button>
-      </div>
+      </Collapsible>
       <p className="hint">
         Academic year {ay.label}: <strong>{fundedCount} funded weeks</strong> (LA standard is 38).
       </p>
@@ -229,38 +232,63 @@ export function Settings() {
           Add as bank holiday
         </button>
       </div>
-      {closures.length === 0 && <p className="hint">No closures yet.</p>}
-      {closures.map((c) => (
-        <div key={c.id} className="closure-row">
-          <i className="swatch" style={{ background: CLOSURE_COLOURS[c.kind] }} />
-          <span className="closure-main">
-            <span className="closure-label">{c.label}</span>
-            <span className="hint">
-              {c.start === c.end
-                ? fmtDateLong(c.start)
-                : `${fmtDateLong(c.start)} – ${fmtDateLong(c.end)}`}
+      {(() => {
+        const row = (c: Closure) => (
+          <div key={c.id} className="closure-row">
+            <i className="swatch" style={{ background: CLOSURE_COLOURS[c.kind] }} />
+            <span className="closure-main">
+              <span className="closure-label">{c.label}</span>
+              <span className="hint">
+                {c.start === c.end
+                  ? fmtDateLong(c.start)
+                  : `${fmtDateLong(c.start)} \u2013 ${fmtDateLong(c.end)}`}
+              </span>
             </span>
-          </span>
-          <button
-            className="sheet-close"
-            aria-label={`Remove ${c.label}`}
-            onClick={() => persistClosures(closures.filter((x) => x.id !== c.id))}
-          >
-            ✕
-          </button>
-        </div>
-      ))}
-      <button
-        className="btn-quiet"
-        onClick={() =>
-          persistClosures([
-            ...closures.filter((c) => c.kind !== "bankHoliday"),
-            ...UK_BANK_HOLIDAYS,
-          ])
-        }
-      >
-        Reset UK bank holidays
-      </button>
+            <button
+              className="sheet-close"
+              aria-label={`Remove ${c.label}`}
+              onClick={() => persistClosures(closures.filter((x) => x.id !== c.id))}
+            >
+              ✕
+            </button>
+          </div>
+        );
+        const mine = closures.filter((c) => c.kind === "minderHoliday");
+        const bankAll = closures.filter((c) => c.kind === "bankHoliday");
+        const today = todayISO();
+        const bankUpcoming = bankAll.filter((c) => c.end >= today);
+        const bankPast = bankAll.filter((c) => c.end < today);
+        return (
+          <>
+            <Collapsible title="My holidays" count={mine.length} defaultOpen={mine.length > 0}>
+              {mine.length === 0 ? (
+                <p className="hint">None yet — add your first closure above.</p>
+              ) : (
+                mine.map(row)
+              )}
+            </Collapsible>
+            <Collapsible title="Bank holidays" count={bankAll.length}>
+              {bankUpcoming.map(row)}
+              {bankPast.length > 0 && (
+                <Collapsible title="Earlier" count={bankPast.length}>
+                  {bankPast.map(row)}
+                </Collapsible>
+              )}
+              <button
+                className="btn-quiet"
+                onClick={() =>
+                  persistClosures([
+                    ...closures.filter((c) => c.kind !== "bankHoliday"),
+                    ...UK_BANK_HOLIDAYS,
+                  ])
+                }
+              >
+                Reset UK bank holidays
+              </button>
+            </Collapsible>
+          </>
+        );
+      })()}
 
       <div className="form-section">Backup</div>
       <p className="hint">

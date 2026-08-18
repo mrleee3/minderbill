@@ -46,7 +46,6 @@ body {
   inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
 }
 
 .app-header {
@@ -583,3 +582,37 @@ body {
 .closure-row .swatch { width: 4px; height: 26px; border-radius: 2px; flex: none; }
 .closure-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .closure-label { font-family: var(--display); font-weight: 700; font-size: 14px; }
+
+/* ---- Collapsible sections ---- */
+.collapsible {
+  border: 1px solid var(--mist);
+  border-radius: var(--radius);
+  background: var(--card);
+  overflow: hidden;
+}
+.collapse-head {
+  appearance: none; border: 0; background: none; width: 100%;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 14px; cursor: pointer; font: inherit; color: inherit;
+}
+.collapse-title {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--display); font-weight: 700; font-size: 14px;
+}
+.collapse-count {
+  background: var(--mist); color: var(--ink-60);
+  border-radius: 999px; padding: 1px 8px; font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.chev {
+  color: var(--ink-60); font-size: 20px; line-height: 1;
+  transform: rotate(90deg); transition: transform 0.18s ease;
+}
+.chev.open { transform: rotate(-90deg); }
+@media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+.collapse-body {
+  padding: 0 12px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.collapse-body .collapsible { background: var(--paper); }
+.collapse-body .btn-quiet { margin-top: 2px; }
