@@ -3,6 +3,9 @@ import { db, type ChildContract } from "../db";
 import { WEEKDAY_LABELS, inputToMin, minToInput, todayISO } from "../lib/dates";
 import { effectiveRatePence } from "../lib/schedule";
 import { formatPence } from "../engine/invoice";
+import { BAND_LABELS, ageBandOn, surreyRateFor } from "../data/surrey";
+import { nextColour } from "../lib/settings";
+import { useLiveQuery } from "dexie-react-hooks";
 
 const DEFAULT_SLOT = { startMin: 480, endMin: 1050 }; // 8:00–17:30
 
@@ -68,6 +71,11 @@ export function ChildForm({
   const [payerName, setPayerName] = useState(existing?.payer?.name ?? "");
   const [tfcRef, setTfcRef] = useState(existing?.payer?.tfcReference ?? "");
 
+  const allChildren = useLiveQuery(() => db.children.toArray(), []) ?? [];
+
+  const band = dob ? ageBandOn(dob, today) : null;
+  const surreyRate = dob ? surreyRateFor(dob, today) : null;
+
   const topUpPreview = useMemo(() => {
     const la = poundsToPence(laRateStr);
     const min = poundsToPence(minEffStr);
@@ -92,6 +100,7 @@ export function ChildForm({
     const contract: ChildContract = {
       ...(existing ?? {}),
       name: name.trim(),
+      color: existing?.color ?? nextColour(allChildren),
       dob: dob || undefined,
       startDate: existing?.startDate ?? today,
       rates,
@@ -199,9 +208,27 @@ export function ChildForm({
             </label>
             <label className="field">
               <span>LA rate (£/hr)</span>
-              <input inputMode="decimal" value={laRateStr} onChange={(e) => setLaRateStr(e.target.value)} placeholder="e.g. 6.12" />
+              <input inputMode="decimal" value={laRateStr} onChange={(e) => setLaRateStr(e.target.value)} placeholder="from remittance" />
             </label>
           </div>
+          {band && (
+            <p className="hint">
+              {BAND_LABELS[band]}
+              {surreyRate != null ? (
+                <>
+                  {" — Surrey pays "}{formatPence(surreyRate)}/hr from Apr 2026.{" "}
+                  {poundsToPence(laRateStr) !== surreyRate && (
+                    <button className="link" onClick={() => setLaRateStr(penceToPounds(surreyRate))}>
+                      Use Surrey rate
+                    </button>
+                  )}
+                </>
+              ) : (
+                " — Surrey's under-2s rate isn't published openly; take it from your SCC remittance."
+              )}{" "}
+              Always check against your remittance (supplements can change what you actually receive).
+            </p>
+          )}
           <div className="field-row">
             <label className="field">
               <span>Minimum effective (£/hr)</span>

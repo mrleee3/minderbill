@@ -3,6 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract, type DayLog } from "../db";
 import { addDays, fmtDateLong, fmtHours, minToInput, todayISO } from "../lib/dates";
 import { resolveDay } from "../lib/schedule";
+import { childColour } from "../lib/settings";
 import { Sheet } from "../components/Sheet";
 import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
@@ -16,7 +17,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
     logs.find((l) => l.childId === c.id);
 
   const rows = children
-    .map((c) => ({ child: c, log: logFor(c), resolved: resolveDay(c, date, logFor(c)) }))
+    .map((c, i) => ({ child: c, colour: childColour(c, i), log: logFor(c), resolved: resolveDay(c, date, logFor(c)) }))
     .sort((a, b) => (a.resolved?.startMin ?? 9999) - (b.resolved?.startMin ?? 9999));
 
   const attending = rows.filter((r) => r.resolved);
@@ -49,9 +50,11 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </div>
       )}
 
-      {attending.map(({ child, resolved }) => (
+      {attending.map(({ child, colour, resolved }) => (
         <button key={child.id} className="child-card" onClick={() => setEditing(child)}>
-          <span className="avatar">{child.name[0]?.toUpperCase()}</span>
+          <span className="avatar" style={{ background: colour }}>
+            <span className="avatar-letter">{child.name[0]?.toUpperCase()}</span>
+          </span>
           <span className="card-main">
             <span className="card-name">{child.name}</span>
             {resolved!.absence ? (
@@ -80,9 +83,11 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
       {notToday.length > 0 && (
         <>
           <div className="form-section">Not attending {isToday ? "today" : "this day"}</div>
-          {notToday.map(({ child }) => (
+          {notToday.map(({ child, colour }) => (
             <button key={child.id} className="child-card quiet" onClick={() => setEditing(child)}>
-              <span className="avatar muted">{child.name[0]?.toUpperCase()}</span>
+              <span className="avatar muted" style={{ background: `${colour}33` }}>
+                <span className="avatar-letter muted-letter">{child.name[0]?.toUpperCase()}</span>
+              </span>
               <span className="card-main">
                 <span className="card-name">{child.name}</span>
               </span>

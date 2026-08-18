@@ -3,6 +3,8 @@ import { UpdateBanner } from "./components/UpdateBanner";
 import { Today } from "./screens/Today";
 import { Month } from "./screens/Month";
 import { Children } from "./screens/Children";
+import { Invoices } from "./screens/Invoices";
+import { Settings } from "./screens/Settings";
 import { todayISO } from "./lib/dates";
 
 type Tab = "today" | "month" | "invoices" | "children" | "settings";
@@ -15,50 +17,27 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "settings", label: "Settings", icon: "⚙️" },
 ];
 
-function Empty({ glyph, title, hint }: { glyph: string; title: string; hint: string }) {
-  return (
-    <div className="empty">
-      <span className="glyph">{glyph}</span>
-      <p><strong>{title}</strong></p>
-      <p>{hint}</p>
-    </div>
-  );
-}
 
 function Screen({
   tab,
   date,
   setDate,
-  onPickDay,
 }: {
   tab: Tab;
   date: string;
   setDate: (iso: string) => void;
-  onPickDay: (iso: string) => void;
 }) {
   switch (tab) {
     case "today":
       return <Today date={date} setDate={setDate} />;
     case "month":
-      return <Month date={date} setDate={setDate} onPickDay={onPickDay} />;
+      return <Month />;
     case "invoices":
-      return (
-        <Empty
-          glyph="📄"
-          title="No invoices yet"
-          hint="At the start of each month, generate itemised invoices for the month just gone — funded hours, top-ups and private hours all shown clearly."
-        />
-      );
+      return <Invoices />;
     case "children":
       return <Children />;
     case "settings":
-      return (
-        <Empty
-          glyph="⚙️"
-          title="Settings"
-          hint="Term dates, your business details, invoice footer and backups will be managed here."
-        />
-      );
+      return <Settings />;
   }
 }
 
@@ -75,16 +54,9 @@ export default function App() {
         <span className="build-id">{__BUILD_ID__}</span>
       </header>
       <main className="screen">
-        <Screen
-          tab={tab}
-          date={date}
-          setDate={setDate}
-          onPickDay={(iso) => {
-            setDate(iso);
-            setTab("today");
-          }}
-        />
+        <Screen tab={tab} date={date} setDate={setDate} />
       </main>
+      <div id="print-root" aria-hidden="true" />
       <nav className="tabbar">
         {TABS.map((t) => (
           <button

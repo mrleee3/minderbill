@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "../db";
+import { db, type ChildContract, type DayLog } from "../db";
 import {
   WEEKDAY_LABELS,
   addMonths,
+  fmtDateLong,
   fmtHours,
+  minToInput,
   monthDays,
   monthLabel,
   parseISO,
@@ -11,19 +14,18 @@ import {
   weekdayIndex,
 } from "../lib/dates";
 import { resolveDay } from "../lib/schedule";
+import { childColour } from "../lib/settings";
+import { Sheet } from "../components/Sheet";
+import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
-export function Month({
-  date,
-  setDate,
-  onPickDay,
-}: {
-  date: string;
-  setDate: (iso: string) => void;
-  onPickDay: (iso: string) => void;
-}) {
+export function Month() {
+  const [viewDate, setViewDate] = useState(todayISO());
+  const [selDay, setSelDay] = useState(todayISO());
+  const [editing, setEditing] = useState<ChildContract | null>(null);
+
   const children = useLiveQuery(() => db.children.toArray(), []) ?? [];
-  const days = monthDays(date);
-  const monthPrefix = date.slice(0, 7);
+  const days = monthDays(viewDate);
+  const monthPrefix = viewDate.slice(0, 7);
   const logs =
     useLiveQuery(
       () => db.dayLogs.where("date").between(days[0], days[days.length - 1], true, true).toArray(),
@@ -31,34 +33,39 @@ export function Month({
     ) ?? [];
   const today = todayISO();
 
-  const dayInfo = (iso: string) => {
-    let attended = 0;
-    let absent = 0;
-    let adjusted = false;
-    let minutes = 0;
-    for (const c of children) {
-      const log = logs.find((l) => l.childId === c.id && l.date === iso);
-      const r = resolveDay(c, iso, log);
-      if (!r) continue;
-      if (r.absence) absent++;
-      else {
-        attended++;
-        minutes += r.minutes;
-      }
-      if (r.source === "log") adjusted = true;
-    }
-    return { attended, absent, adjusted, minutes };
+  const logFor = (c: ChildContract, iso: string): DayLog | undefined =>
+    logs.find((l) => l.childId === c.id && l.date === iso);
+
+  const shiftMonth = (n: number) => {
+    const next = addMonths(viewDate, n);
+    setViewDate(next);
+    setSelDay(next.slice(0, 7) === today.slice(0, 7) ? today : next);
   };
 
   const leading = weekdayIndex(days[0]);
-  const totalMinutes = days.reduce((s, d) => s + dayInfo(d).minutes, 0);
+  const totalMinutes = days.reduce((sum, iso) => {
+    for (const c of children) {
+      const r = resolveDay(c, iso, logFor(c, iso));
+      if (r && !r.absence) sum += r.minutes;
+    }
+    return sum;
+  }, 0);
+
+  const selRows = children
+    .map((c, i) => ({
+      child: c,
+      colour: childColour(c, i),
+      log: logFor(c, selDay),
+      resolved: resolveDay(c, selDay, logFor(c, selDay)),
+    }))
+    .sort((a, b) => (a.resolved?.startMin ?? 9999) - (b.resolved?.startMin ?? 9999));
 
   return (
     <>
       <div className="date-nav">
-        <button className="nav-btn" onClick={() => onMonthShift(-1)} aria-label="Previous month">‹</button>
-        <div className="date-label"><strong>{monthLabel(date)}</strong></div>
-        <button className="nav-btn" onClick={() => onMonthShift(1)} aria-label="Next month">›</button>
+        <button className="nav-btn" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
+        <div className="date-label"><strong>{monthLabel(viewDate)}</strong></div>
+        <button className="nav-btn" onClick={() => shiftMonth(1)} aria-label="Next month">›</button>
       </div>
 
       <div className="month-grid">
@@ -69,34 +76,88 @@ export function Month({
           <span key={`pad${i}`} />
         ))}
         {days.map((iso) => {
-          const info = dayInfo(iso);
-          const busy = info.attended + info.absent > 0;
+          const dots = children
+            .map((c, i) => {
+              const r = resolveDay(c, iso, logFor(c, iso));
+              if (!r) return null;
+              return { colour: childColour(c, i), absent: !!r.absence };
+            })
+            .filter(Boolean) as { colour: string; absent: boolean }[];
           return (
             <button
               key={iso}
-              className={`month-day${iso === today ? " today" : ""}${busy ? " busy" : ""}`}
-              onClick={() => onPickDay(iso)}
+              className={`month-day${iso === today ? " today" : ""}${dots.length ? " busy" : ""}${iso === selDay ? " sel" : ""}`}
+              onClick={() => setSelDay(iso)}
             >
               <span className="num">{parseISO(iso).d}</span>
               <span className="dots">
-                {Array.from({ length: Math.min(info.attended, 4) }).map((_, i) => (
-                  <i key={`a${i}`} className="d-att" />
-                ))}
-                {Array.from({ length: Math.min(info.absent, 4) }).map((_, i) => (
-                  <i key={`x${i}`} className="d-abs" />
+                {dots.slice(0, 4).map((d, i) => (
+                  <i key={i} style={{ background: d.absent ? "transparent" : d.colour, borderColor: d.absent ? "var(--clay)" : d.colour }} className={d.absent ? "d-ring" : ""} />
                 ))}
               </span>
             </button>
           );
         })}
       </div>
+      <p className="day-total hours">{fmtHours(totalMinutes)} across {monthLabel(viewDate)}</p>
 
-      <p className="day-total hours">{fmtHours(totalMinutes)} across {monthLabel(date)}</p>
-      <p className="hint center">Tap a day to view or adjust it. Funded-week shading arrives with term dates.</p>
+      <div className="form-section">{selDay === today ? "Today" : fmtDateLong(selDay)}</div>
+      {selRows.filter((r) => r.resolved).length === 0 && (
+        <p className="hint">No children attending this day. Tap a child below to log an extra day.</p>
+      )}
+      {selRows
+        .filter((r) => r.resolved)
+        .map(({ child, colour, resolved }) => (
+          <button key={child.id} className="child-card" onClick={() => setEditing(child)}>
+            <span className="avatar" style={{ background: colour }}>
+              <span className="avatar-letter">{child.name[0]?.toUpperCase()}</span>
+            </span>
+            <span className="card-main">
+              <span className="card-name">{child.name}</span>
+              {resolved!.absence ? (
+                <span className="status absent">{ABSENCE_LABELS[resolved!.absence]}</span>
+              ) : (
+                <span className="card-time hours">
+                  {minToInput(resolved!.startMin)}–{minToInput(resolved!.endMin)}
+                  <span className="dot-sep">·</span>
+                  {fmtHours(resolved!.minutes)}
+                </span>
+              )}
+            </span>
+            <span className={`status-chip ${resolved!.absence ? "absent" : resolved!.source === "log" ? "adjusted" : "planned"}`}>
+              {resolved!.absence ? "Absent" : resolved!.source === "log" ? "Adjusted" : "As planned"}
+            </span>
+          </button>
+        ))}
+      {selRows
+        .filter((r) => !r.resolved)
+        .map(({ child, colour }) => (
+          <button key={child.id} className="child-card quiet" onClick={() => setEditing(child)}>
+            <span className="avatar muted" style={{ background: `${colour}33` }}>
+              <span className="avatar-letter muted-letter">{child.name[0]?.toUpperCase()}</span>
+            </span>
+            <span className="card-main">
+              <span className="card-name">{child.name}</span>
+            </span>
+            <span className="status-chip add">+ Log attendance</span>
+          </button>
+        ))}
+
+      <Sheet
+        open={!!editing}
+        title={editing ? `${editing.name} — ${fmtDateLong(selDay)}` : ""}
+        onClose={() => setEditing(null)}
+      >
+        {editing && (
+          <DayEditor
+            child={editing}
+            date={selDay}
+            resolved={resolveDay(editing, selDay, logFor(editing, selDay))}
+            log={logFor(editing, selDay)}
+            onDone={() => setEditing(null)}
+          />
+        )}
+      </Sheet>
     </>
   );
-
-  function onMonthShift(n: number) {
-    setDate(addMonths(date, n));
-  }
 }

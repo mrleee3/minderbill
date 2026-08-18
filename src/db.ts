@@ -7,6 +7,8 @@ import Dexie, { type EntityTable } from "dexie";
 export interface ChildContract {
   id?: number;
   name: string;
+  color?: string; // display colour (see CHILD_COLOURS)
+  demo?: boolean; // demo data, removable in Settings
   dob?: string; // ISO date — drives entitlement age gates
   startDate?: string;
   /** Hourly rates with effective-from dates (versioned; never edit history). */

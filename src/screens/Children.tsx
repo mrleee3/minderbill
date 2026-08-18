@@ -5,6 +5,8 @@ import { todayISO } from "../lib/dates";
 import { effectiveRatePence, scheduleSummary } from "../lib/schedule";
 import { formatPence } from "../engine/invoice";
 import { Sheet } from "../components/Sheet";
+import { childColour } from "../lib/settings";
+import { addDemoChildren } from "../lib/demo";
 import { ChildForm } from "../components/ChildForm";
 
 export function Children() {
@@ -20,9 +22,11 @@ export function Children() {
           <p>Each child gets a contract: hourly rate, usual weekly hours, funded hours and charging policies.</p>
         </div>
       ) : (
-        children.map((c) => (
+        children.map((c, i) => (
           <button key={c.id} className="child-card" onClick={() => setSheet(c)}>
-            <span className="avatar">{c.name[0]?.toUpperCase()}</span>
+            <span className="avatar" style={{ background: childColour(c, i) }}>
+              <span className="avatar-letter">{c.name[0]?.toUpperCase()}</span>
+            </span>
             <span className="card-main">
               <span className="card-name">{c.name}</span>
               <span className="card-time hours">
@@ -43,6 +47,11 @@ export function Children() {
       <button className="btn-primary" onClick={() => setSheet("new")}>
         + Add child
       </button>
+      {children.length === 0 && (
+        <button className="btn-quiet" onClick={() => addDemoChildren()}>
+          Or add two demo children to see it working
+        </button>
+      )}
 
       <Sheet
         open={sheet !== "closed"}
