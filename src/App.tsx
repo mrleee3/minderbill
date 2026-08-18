@@ -1,5 +1,9 @@
 import { useState } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
+import { Today } from "./screens/Today";
+import { Month } from "./screens/Month";
+import { Children } from "./screens/Children";
+import { todayISO } from "./lib/dates";
 
 type Tab = "today" | "month" | "invoices" | "children" | "settings";
 
@@ -21,24 +25,22 @@ function Empty({ glyph, title, hint }: { glyph: string; title: string; hint: str
   );
 }
 
-function Screen({ tab }: { tab: Tab }) {
+function Screen({
+  tab,
+  date,
+  setDate,
+  onPickDay,
+}: {
+  tab: Tab;
+  date: string;
+  setDate: (iso: string) => void;
+  onPickDay: (iso: string) => void;
+}) {
   switch (tab) {
     case "today":
-      return (
-        <Empty
-          glyph="☀️"
-          title="Nothing to log yet"
-          hint="Add your children and their usual weekly hours, and each day will be pre-filled here — you'll only ever tap the exceptions."
-        />
-      );
+      return <Today date={date} setDate={setDate} />;
     case "month":
-      return (
-        <Empty
-          glyph="🗓️"
-          title="Month view"
-          hint="A colour-coded grid of every child's days — attended, adjusted, absences and funded weeks — will live here."
-        />
-      );
+      return <Month date={date} setDate={setDate} onPickDay={onPickDay} />;
     case "invoices":
       return (
         <Empty
@@ -48,13 +50,7 @@ function Screen({ tab }: { tab: Tab }) {
         />
       );
     case "children":
-      return (
-        <Empty
-          glyph="🧒"
-          title="No children yet"
-          hint="Each child gets a contract: hourly rate, usual weekly schedule, funded hours and charging policies."
-        />
-      );
+      return <Children />;
     case "settings":
       return (
         <Empty
@@ -68,6 +64,7 @@ function Screen({ tab }: { tab: Tab }) {
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
+  const [date, setDate] = useState(todayISO());
   return (
     <>
       <UpdateBanner />
@@ -78,7 +75,15 @@ export default function App() {
         <span className="build-id">{__BUILD_ID__}</span>
       </header>
       <main className="screen">
-        <Screen tab={tab} />
+        <Screen
+          tab={tab}
+          date={date}
+          setDate={setDate}
+          onPickDay={(iso) => {
+            setDate(iso);
+            setTab("today");
+          }}
+        />
       </main>
       <nav className="tabbar">
         {TABS.map((t) => (
