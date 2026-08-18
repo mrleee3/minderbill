@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract, type DayLog } from "../db";
-import { addDays, fmtDateLong, fmtHours, minToInput, todayISO } from "../lib/dates";
+import { addDays, fmtDateLong, fmtHours, minToInput, todayISO,
+  ageLabel,
+} from "../lib/dates";
 import { resolveDay } from "../lib/schedule";
 import { childColour, getClosures } from "../lib/settings";
 import { CLOSURE_COLOURS, CLOSURE_LABELS, closureOn, type Closure } from "../data/closures";
@@ -73,7 +75,10 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
             <span className="avatar-letter">{child.name[0]?.toUpperCase()}</span>
           </span>
           <span className="card-main">
-            <span className="card-name">{child.name}</span>
+            <span className="card-name">
+                {child.name}
+                {child.dob && <span className="age"> ({ageLabel(child.dob, date)})</span>}
+              </span>
             {resolved!.absence ? (
               <span className="status absent">{ABSENCE_LABELS[resolved!.absence]}</span>
             ) : (
@@ -106,7 +111,10 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
                 <span className="avatar-letter muted-letter">{child.name[0]?.toUpperCase()}</span>
               </span>
               <span className="card-main">
-                <span className="card-name">{child.name}</span>
+                <span className="card-name">
+                {child.name}
+                {child.dob && <span className="age"> ({ageLabel(child.dob, date)})</span>}
+              </span>
               </span>
               <span className="status-chip add">+ Log attendance</span>
             </button>

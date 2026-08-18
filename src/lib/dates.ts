@@ -69,3 +69,21 @@ export function addMonths(iso: string, n: number): string {
   const dt = new Date(y, m - 1 + n, 1);
   return toISO(dt.getFullYear(), dt.getMonth() + 1, 1);
 }
+
+/**
+ * Short age label from a date of birth: "8m" under a year, "2y 4m" while
+ * months still matter, "5y" from five onwards. Empty when there's no DOB.
+ */
+export function ageLabel(dobISO: string | undefined, onISO: string): string {
+  if (!dobISO) return "";
+  const b = parseISO(dobISO);
+  const o = parseISO(onISO);
+  let months = (o.y - b.y) * 12 + (o.m - b.m);
+  if (o.d < b.d) months--;
+  if (months < 0) return "";
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (years === 0) return `${months}m`;
+  if (years >= 5 || rem === 0) return `${years}y`;
+  return `${years}y ${rem}m`;
+}

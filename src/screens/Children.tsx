@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract } from "../db";
-import { todayISO } from "../lib/dates";
+import { ageLabel, todayISO } from "../lib/dates";
 import { effectiveRatePence, scheduleSummary } from "../lib/schedule";
 import { formatPence } from "../engine/invoice";
 import { Sheet } from "../components/Sheet";
@@ -28,7 +28,10 @@ export function Children() {
               <span className="avatar-letter">{c.name[0]?.toUpperCase()}</span>
             </span>
             <span className="card-main">
-              <span className="card-name">{c.name}</span>
+              <span className="card-name">
+                {c.name}
+                {c.dob && <span className="age"> ({ageLabel(c.dob, todayISO())})</span>}
+              </span>
               <span className="card-time hours">
                 {formatPence(effectiveRatePence(c, todayISO()))}/hr
                 <span className="dot-sep">·</span>

@@ -12,6 +12,7 @@ import {
   parseISO,
   todayISO,
   weekdayIndex,
+  ageLabel,
 } from "../lib/dates";
 import { resolveDay } from "../lib/schedule";
 import { childColour } from "../lib/settings";
@@ -153,7 +154,10 @@ export function Month() {
               <span className="avatar-letter">{child.name[0]?.toUpperCase()}</span>
             </span>
             <span className="card-main">
-              <span className="card-name">{child.name}</span>
+              <span className="card-name">
+                {child.name}
+                {child.dob && <span className="age"> ({ageLabel(child.dob, selDay)})</span>}
+              </span>
               {resolved!.absence ? (
                 <span className="status absent">{ABSENCE_LABELS[resolved!.absence]}</span>
               ) : (
@@ -177,7 +181,10 @@ export function Month() {
               <span className="avatar-letter muted-letter">{child.name[0]?.toUpperCase()}</span>
             </span>
             <span className="card-main">
-              <span className="card-name">{child.name}</span>
+              <span className="card-name">
+                {child.name}
+                {child.dob && <span className="age"> ({ageLabel(child.dob, selDay)})</span>}
+              </span>
             </span>
             <span className="status-chip add">+ Log attendance</span>
           </button>

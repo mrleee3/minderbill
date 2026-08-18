@@ -62,11 +62,7 @@ body {
   margin: 0;
 }
 .app-title .bill { color: var(--marigold); }
-.build-id {
-  font-size: 11px; color: var(--ink-60); font-variant-numeric: tabular-nums;
-  appearance: none; border: 0; background: none; padding: 0; font-family: inherit;
-}
-.debug-line { font-size: 10px; color: var(--ink-60); word-break: break-all; }
+.build-id { font-size: 11px; color: var(--ink-60); font-variant-numeric: tabular-nums; }
 
 .screen {
   flex: 1 1 auto;
@@ -143,6 +139,7 @@ body {
 
 /* ---- Update banner (red restart pill, Waymark pattern) ---- */
 .update-pill {
+  z-index: 300;
   position: fixed;
   top: calc(env(safe-area-inset-top, 0px) + 8px);
   left: 50%;
@@ -156,7 +153,6 @@ body {
   border-radius: 999px;
   padding: 9px 18px;
   box-shadow: 0 4px 14px rgba(30, 42, 50, 0.25);
-  z-index: 100;
   cursor: pointer;
 }
 
@@ -219,7 +215,7 @@ body {
 /* ---- Sheet ---- */
 .sheet-overlay {
   position: fixed; inset: 0; background: rgba(30, 42, 50, 0.4);
-  display: flex; align-items: flex-end; z-index: 50;
+  display: flex; align-items: flex-end; z-index: 200;
 }
 .sheet {
   background: var(--paper); width: 100%; max-height: 92dvh;
@@ -625,3 +621,4 @@ body {
 }
 .collapse-body .collapsible { background: var(--paper); }
 .collapse-body .btn-quiet { margin-top: 2px; }
+.age { color: var(--ink-60); font-weight: 500; font-size: 13px; }
