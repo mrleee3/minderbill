@@ -10,6 +10,17 @@ export interface TermBlock {
   label: string;
 }
 
+// Surrey school term dates, academic year 2025/26 (surreycc.gov.uk
+// "School term dates").
+export const SURREY_TERMS_2025_26: TermBlock[] = [
+  { start: "2025-09-03", end: "2025-10-24", label: "Autumn 1 \u00b7 2025" },
+  { start: "2025-11-03", end: "2025-12-19", label: "Autumn 2 \u00b7 2025" },
+  { start: "2026-01-05", end: "2026-02-13", label: "Spring 1 \u00b7 2026" },
+  { start: "2026-02-23", end: "2026-03-27", label: "Spring 2 \u00b7 2026" },
+  { start: "2026-04-13", end: "2026-05-22", label: "Summer 1 \u00b7 2026" },
+  { start: "2026-06-01", end: "2026-07-22", label: "Summer 2 \u00b7 2026" },
+];
+
 // Surrey school term dates, academic year 2026/27 (surreycc.gov.uk,
 // "School term changes for 2026 to 2027"). NB two-week October half term.
 export const SURREY_TERMS_2026_27: TermBlock[] = [
@@ -19,6 +30,12 @@ export const SURREY_TERMS_2026_27: TermBlock[] = [
   { start: "2027-02-22", end: "2027-03-25", label: "Spring 2 · 2027" },
   { start: "2027-04-12", end: "2027-05-28", label: "Summer 1 · 2027" },
   { start: "2027-06-07", end: "2027-07-28", label: "Summer 2 · 2027" },
+];
+
+/** Everything the app ships with: both published academic years. */
+export const SURREY_TERMS_ALL: TermBlock[] = [
+  ...SURREY_TERMS_2025_26,
+  ...SURREY_TERMS_2026_27,
 ];
 
 export type AgeBand = "under2" | "two" | "threeFour";

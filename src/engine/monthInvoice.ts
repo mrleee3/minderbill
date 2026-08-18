@@ -41,11 +41,28 @@ export interface TraceWeek {
   days: TraceDay[];
 }
 
+export interface FundingSummary {
+  /** Does this child have funding configured at all? */
+  hasFunding: boolean;
+  fundedCapMinutes: number;
+  /** Minutes in this month that fell on term-time (funded-eligible) days. */
+  termMinutes: number;
+  holidayMinutes: number;
+  fundedMinutes: number;
+  privateMinutes: number;
+  /** Term days present in the month per the term calendar. */
+  termDaysInMonth: number;
+  /** Funded hours claimable but unused (attended fewer hours than the cap). */
+  unusedFundedMinutes: number;
+  topUpPencePerHour: number;
+}
+
 export interface MonthInvoiceResult {
   period: string;
   lines: DetailedLine[];
   totalPence: number;
   trace: TraceWeek[];
+  summary: FundingSummary;
 }
 
 /** Which charging policy applies to an absence reason. */
@@ -91,6 +108,10 @@ export function buildMonthInvoice(
 
   const trace: TraceWeek[] = [];
   let fundedTotalMin = 0;
+  let termMinutes = 0;
+  let holidayMinutes = 0;
+  let unusedFundedMinutes = 0;
+  const termDays = new Set<string>();
   const privateByRate = new Map<number, number>(); // rate pence/hr → minutes
 
   for (let monday = weekMonday(first); monday <= last; monday = addDays(monday, 7)) {
@@ -116,6 +137,12 @@ export function buildMonthInvoice(
 
       if (inMonth) {
         fundedTotalMin += fundedMin;
+        if (inTerm) {
+          termMinutes += chargeMinutes;
+          termDays.add(date);
+        } else {
+          holidayMinutes += chargeMinutes;
+        }
         if (privateMin > 0) {
           const rate = effectiveRatePence(child, date);
           privateByRate.set(rate, (privateByRate.get(rate) ?? 0) + privateMin);
@@ -132,7 +159,13 @@ export function buildMonthInvoice(
         privateMin,
       });
     }
-    if (days.length > 0) trace.push({ monday, funded: weekHasFundedDay, days });
+    if (days.length > 0) {
+      const weekTouchesMonth = days.some((d) => d.inMonth);
+      if (weekHasFundedDay && weekTouchesMonth && capLeft > 0) {
+        unusedFundedMinutes += capLeft;
+      }
+      trace.push({ monday, funded: weekHasFundedDay, days });
+    }
   }
 
   const lines: DetailedLine[] = [];
@@ -164,10 +197,23 @@ export function buildMonthInvoice(
     });
   }
 
+  const privateMinutes = [...privateByRate.values()].reduce((a, b) => a + b, 0);
+
   return {
     period,
     lines,
     totalPence: lines.reduce((s, l) => s + l.amountPence, 0),
     trace,
+    summary: {
+      hasFunding: fundedCap > 0,
+      fundedCapMinutes: fundedCap,
+      termMinutes,
+      holidayMinutes,
+      fundedMinutes: fundedTotalMin,
+      privateMinutes,
+      termDaysInMonth: termDays.size,
+      unusedFundedMinutes,
+      topUpPencePerHour: topUp,
+    },
   };
 }

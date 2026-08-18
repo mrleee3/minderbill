@@ -61,6 +61,11 @@ export function Invoices() {
               <span className="card-time money">
                 {inv ? `${formatPence(inv.totalPence)} · v${inv.version}` : "Not generated"}
               </span>
+              {c.funding && (
+                <span className="card-note">
+                  {c.funding.fundedMinutesPerWeek / 60} h/wk funded, term time only
+                </span>
+              )}
             </span>
             <span className={`status-chip ${paid ? "funded" : inv ? "adjusted" : "planned"}`}>
               {paid ? "Paid" : inv ? "Generated" : "Draft"}
@@ -103,6 +108,7 @@ function InvoiceDetail({
 }) {
   const [preview, setPreview] = useState<MonthInvoiceResult | null>(null);
   const [showTrace, setShowTrace] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     // All of this child's logs; the engine only reads the weeks that
@@ -120,8 +126,10 @@ function InvoiceDetail({
 
   const lines: DetailedLine[] = saved ? (saved.lines as DetailedLine[]) : preview.lines;
   const total = saved ? saved.totalPence : preview.totalPence;
-  const isStale =
-    saved && JSON.stringify(saved.lines) !== JSON.stringify(preview.lines);
+  const isStale = saved && JSON.stringify(saved.lines) !== JSON.stringify(preview.lines);
+  const sum = preview.summary;
+  const paid = saved && saved.paidPence >= saved.totalPence && saved.totalPence > 0;
+  const locked = !!saved && !isStale;
 
   async function generate() {
     const version = (saved?.version ?? 0) + 1;
@@ -138,8 +146,13 @@ function InvoiceDetail({
 
   async function togglePaid() {
     if (!saved?.id) return;
-    const paid = saved.paidPence >= saved.totalPence && saved.totalPence > 0;
     await db.invoices.update(saved.id, { paidPence: paid ? 0 : saved.totalPence });
+  }
+
+  async function unlock() {
+    if (!saved?.id) return;
+    if (!confirm(`Delete v${saved.version} and go back to a draft? The hours themselves aren't changed.`)) return;
+    await db.invoices.delete(saved.id);
   }
 
   function printInvoice() {
@@ -149,16 +162,66 @@ function InvoiceDetail({
     window.print();
   }
 
-  const paid = saved && saved.paidPence >= saved.totalPence && saved.totalPence > 0;
-
   return (
     <div className="form">
+      {/* ---- Funding summary: the heart of the invoice ---- */}
+      {sum.hasFunding ? (
+        <div className={`fund-panel${sum.fundedMinutes === 0 ? " none" : ""}`}>
+          <div className="fund-head">
+            <span>Funding this month</span>
+            <span className="hours">{fmtHours(sum.fundedCapMinutes)}/week entitlement</span>
+          </div>
+          <div className="fund-bars">
+            <div className="fund-bar">
+              <span className="bar-label">Term-time hours</span>
+              <span className="hours">{fmtHours(sum.termMinutes)}</span>
+            </div>
+            <div className="fund-bar indent">
+              <span className="bar-label leaf">→ covered by funding</span>
+              <span className="hours leaf">{fmtHours(sum.fundedMinutes)}</span>
+            </div>
+            <div className="fund-bar indent">
+              <span className="bar-label">→ over the entitlement, charged</span>
+              <span className="hours">{fmtHours(Math.max(0, sum.termMinutes - sum.fundedMinutes))}</span>
+            </div>
+            <div className="fund-bar">
+              <span className="bar-label">Holiday hours (no funding)</span>
+              <span className="hours">{fmtHours(sum.holidayMinutes)}</span>
+            </div>
+          </div>
+          {sum.fundedMinutes === 0 && sum.holidayMinutes > 0 && (
+            <p className="hint warn">
+              No funded days this month — every day fell outside your term dates. If that's wrong,
+              check Settings → Funded term dates.
+            </p>
+          )}
+          {sum.unusedFundedMinutes > 0 && (
+            <p className="hint">
+              {fmtHours(sum.unusedFundedMinutes)} of entitlement went unused this month (attended
+              fewer hours than the weekly allowance).
+            </p>
+          )}
+          {sum.topUpPencePerHour > 0 && sum.fundedMinutes > 0 && (
+            <p className="hint">
+              Funded hours are charged at £0; the top-up of {formatPence(sum.topUpPencePerHour)}/hr
+              is billed separately below.
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="hint">No government funding set up for {child.name} — all hours are charged privately.</p>
+      )}
+
+      {/* ---- Itemised lines ---- */}
       {lines.length === 0 && <p className="hint">No chargeable hours this month.</p>}
       {lines.map((l, i) => (
         <div key={i} className={`inv-line${l.kind === "funded" ? " funded" : ""}`}>
           <span className="inv-label">
             {l.label}
-            <span className="inv-sub hours">{fmtHours(l.minutes)}{l.ratePencePerHour > 0 ? ` @ ${formatPence(l.ratePencePerHour)}/hr` : ""}</span>
+            <span className="inv-sub hours">
+              {fmtHours(l.minutes)}
+              {l.ratePencePerHour > 0 ? ` @ ${formatPence(l.ratePencePerHour)}/hr` : " — paid by the council"}
+            </span>
           </span>
           <span className="money">{l.kind === "funded" ? "£0.00" : formatPence(l.amountPence)}</span>
         </div>
@@ -170,12 +233,12 @@ function InvoiceDetail({
 
       {isStale && (
         <p className="hint warn">
-          Logs or settings have changed since v{saved!.version} was generated — regenerate to
-          create v{saved!.version + 1}. The saved version is never silently changed.
+          Hours or settings changed since v{saved!.version} — regenerate to create v{saved!.version + 1}.
+          The saved version is never silently changed.
         </p>
       )}
 
-      <button className="btn-quiet" onClick={() => setShowTrace((s) => !s)}>
+      <button className="btn-quiet" onClick={() => setShowTrace((v) => !v)}>
         {showTrace ? "Hide the working" : "Show the working"}
       </button>
       {showTrace && (
@@ -185,12 +248,12 @@ function InvoiceDetail({
               <div className="trace-head">
                 Week of {w.monday}
                 <span className={`status-chip ${w.funded ? "funded" : "planned"}`}>
-                  {w.funded ? "Funded week" : "Not funded"}
+                  {w.funded ? "Term time" : "Holiday"}
                 </span>
               </div>
               {w.days.map((d) => (
                 <div key={d.date} className={`trace-day${d.inMonth ? "" : " out"}`}>
-                  <span className="hours">{d.date.slice(8)}{d.inMonth ? "" : " (prev/next month)"}</span>
+                  <span className="hours">{d.date.slice(8)}{d.inMonth ? "" : " (other month)"}</span>
                   <span>
                     {d.absence
                       ? `${ABSENCE_LABELS[d.absence]} → ${d.policy === "full" ? "full" : d.policy === "half" ? "half" : "no"} charge`
@@ -199,7 +262,7 @@ function InvoiceDetail({
                   <span className="hours">
                     {d.fundedMin > 0 && <em className="leaf">{fmtHours(d.fundedMin)} funded</em>}
                     {d.fundedMin > 0 && d.privateMin > 0 && " + "}
-                    {d.privateMin > 0 && `${fmtHours(d.privateMin)} private`}
+                    {d.privateMin > 0 && `${fmtHours(d.privateMin)} charged`}
                     {d.chargeMinutes === 0 && "—"}
                   </span>
                 </div>
@@ -209,7 +272,24 @@ function InvoiceDetail({
         </div>
       )}
 
-      {!saved || isStale ? (
+      {/* ---- Inline preview of the printed invoice ---- */}
+      {locked && (
+        <>
+          <button className="btn-quiet" onClick={() => setShowPreview((v) => !v)}>
+            {showPreview ? "Hide invoice preview" : "Preview the invoice"}
+          </button>
+          {showPreview && (
+            <div
+              className="paper-preview"
+              dangerouslySetInnerHTML={{
+                __html: renderPrintHTML(child, period, lines, total, business, saved!.version),
+              }}
+            />
+          )}
+        </>
+      )}
+
+      {!locked ? (
         <button className="btn-primary" onClick={generate}>
           {saved ? `Regenerate as v${saved.version + 1}` : "Generate invoice"}
         </button>
@@ -218,6 +298,9 @@ function InvoiceDetail({
           <button className="btn-primary" onClick={printInvoice}>Print / save PDF</button>
           <button className="btn-quiet" onClick={togglePaid}>
             {paid ? "Mark as unpaid" : "Mark as paid"}
+          </button>
+          <button className="btn-danger" onClick={unlock}>
+            Undo v{saved!.version} — back to draft
           </button>
         </>
       )}
@@ -237,6 +320,7 @@ function renderPrintHTML(
   b: Business,
   version: number
 ): string {
+  const fundedLine = lines.find((l) => l.kind === "funded");
   const rows = lines
     .map(
       (l) => `<tr>
@@ -287,6 +371,9 @@ function renderPrintHTML(
       <tfoot><tr><td colspan="3">Total due</td><td class="num">${formatPence(total)}</td></tr></tfoot>
     </table>
     ${payBits.length ? `<div class="pay"><strong>Payment</strong>${payBits.map((p) => `<div>${p}</div>`).join("")}</div>` : ""}
-    <p class="foot">Government funded hours are shown at no charge. All other items are charged per our agreed terms. Thank you.</p>
+    ${fundedLine ? `<div class="note"><strong>About funded hours</strong>
+      <div>${(fundedLine.minutes / 60).toFixed(2)} hours this month were delivered under your government funded entitlement and are charged at £0.
+      Funded hours apply during term time only; hours in school holidays, and any hours above the weekly entitlement, are charged at the usual rate.</div></div>` : ""}
+    <p class="foot">All items are charged per our agreed terms. Thank you.</p>
   </div>`;
 }

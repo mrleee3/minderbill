@@ -1,5 +1,5 @@
 import { db, type ChildContract } from "../db";
-import { SURREY_TERMS_2026_27, type TermBlock } from "../data/surrey";
+import { SURREY_TERMS_ALL, type TermBlock } from "../data/surrey";
 
 export interface Business {
   name: string;
@@ -31,7 +31,7 @@ export async function setBusiness(b: Business): Promise<void> {
 export async function getTermBlocks(): Promise<TermBlock[]> {
   const s = await db.settings.get("termBlocks");
   const v = s?.value as TermBlock[] | undefined;
-  return v && v.length > 0 ? v : SURREY_TERMS_2026_27;
+  return v && v.length > 0 ? v : SURREY_TERMS_ALL;
 }
 
 export async function setTermBlocks(blocks: TermBlock[]): Promise<void> {

@@ -116,3 +116,33 @@ describe("policyFor", () => {
     expect(policyFor(child, "other")).toBe("full");
   });
 });
+
+describe("funding summary", () => {
+  it("separates term and holiday minutes and reports unused funded hours", () => {
+    // Sept 2026 fully in the term block above.
+    const inv = buildMonthInvoice(child, "2026-09", [], terms);
+    expect(inv.summary.hasFunding).toBe(true);
+    expect(inv.summary.holidayMinutes).toBe(0);
+    expect(inv.summary.termMinutes).toBe(inv.summary.fundedMinutes + inv.summary.privateMinutes);
+    // 28.5 h/wk attended vs 15 h/wk cap → cap always fully used.
+    expect(inv.summary.unusedFundedMinutes).toBe(0);
+  });
+
+  it("counts all minutes as holiday outside term", () => {
+    const inv = buildMonthInvoice(child, "2026-08", [], terms);
+    expect(inv.summary.termMinutes).toBe(0);
+    expect(inv.summary.fundedMinutes).toBe(0);
+    expect(inv.summary.holidayMinutes).toBeGreaterThan(0);
+  });
+
+  it("reports unused funded allowance when attendance is below the cap", () => {
+    const partTime: ChildContract = {
+      ...child,
+      schedule: [{ startMin: 540, endMin: 780 }, null, null, null, null, null, null], // 4h Mon
+    };
+    const inv = buildMonthInvoice(partTime, "2026-09", [], terms);
+    // 240 min attended vs 900 cap → 660 unused each week that touches Sept.
+    expect(inv.summary.unusedFundedMinutes).toBeGreaterThan(0);
+    expect(inv.summary.privateMinutes).toBe(0);
+  });
+});

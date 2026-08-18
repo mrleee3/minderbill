@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../db";
 import type { TermBlock } from "../data/surrey";
-import { SURREY_TERMS_2026_27 } from "../data/surrey";
+import { SURREY_TERMS_2025_26, SURREY_TERMS_2026_27, SURREY_TERMS_ALL } from "../data/surrey";
 import {
   DEFAULT_BUSINESS,
   getBusiness,
@@ -119,7 +119,8 @@ export function Settings() {
 
       <div className="form-section">Funded term dates</div>
       <p className="hint">
-        Prefilled from Surrey school term dates 2026/27 (incl. the two-week October half term).
+        Prefilled from Surrey school term dates for 2025/26 and 2026/27 (the 2026/27 year has a
+        two-week October half term).
         Funded hours only apply on days inside these blocks. Check them against Surrey's Early
         Years Funded Dates calendar — INSET days are not funded.
       </p>
@@ -151,9 +152,17 @@ export function Settings() {
       >
         + Add term block
       </button>
-      <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_2026_27)}>
-        Reset to Surrey 2026/27
-      </button>
+      <div className="field-row">
+        <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_ALL)}>
+          Reset to Surrey (both years)
+        </button>
+        <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_2025_26)}>
+          2025/26 only
+        </button>
+        <button className="btn-quiet" onClick={() => saveBlocks(SURREY_TERMS_2026_27)}>
+          2026/27 only
+        </button>
+      </div>
       <p className="hint">
         Academic year {ay.label}: <strong>{fundedCount} funded weeks</strong> (LA standard is 38).
       </p>
