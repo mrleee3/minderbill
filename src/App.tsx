@@ -13,6 +13,7 @@ import { Children } from "./screens/Children";
 import { Invoices } from "./screens/Invoices";
 import { Settings } from "./screens/Settings";
 import { todayISO } from "./lib/dates";
+import { useEffect } from "react";
 
 type Tab = "today" | "month" | "invoices" | "children" | "settings";
 
@@ -48,9 +49,36 @@ function Screen({
   }
 }
 
+function ViewportDebug() {
+  const [info, setInfo] = useState("");
+  useEffect(() => {
+    const probe = document.createElement("div");
+    probe.style.cssText =
+      "position:fixed;height:env(safe-area-inset-bottom,0px);width:0;visibility:hidden";
+    document.body.appendChild(probe);
+    const read = () => {
+      const sab = probe.getBoundingClientRect().height;
+      setInfo(
+        `ih ${window.innerHeight} · ce ${document.documentElement.clientHeight} · ` +
+          `sh ${screen.height} · vv ${Math.round(visualViewport?.height ?? 0)} · ` +
+          `sab ${Math.round(sab)} · ` +
+          `standalone ${(navigator as any).standalone ?? matchMedia("(display-mode: standalone)").matches}`
+      );
+    };
+    read();
+    const t = setInterval(read, 2000);
+    return () => {
+      clearInterval(t);
+      probe.remove();
+    };
+  }, []);
+  return <span className="debug-line hours">{info}</span>;
+}
+
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
   const [date, setDate] = useState(todayISO());
+  const [debug, setDebug] = useState(false);
   return (
     <>
       <UpdateBanner />
@@ -58,7 +86,10 @@ export default function App() {
         <h1 className="app-title">
           Minder<span className="bill">Bill</span>
         </h1>
-        <span className="build-id">{__BUILD_ID__}</span>
+        <button className="build-id" onClick={() => setDebug((d) => !d)}>
+          {__BUILD_ID__}
+        </button>
+        {debug && <ViewportDebug />}
       </header>
       <main className="screen">
         <Screen tab={tab} date={date} setDate={setDate} />
