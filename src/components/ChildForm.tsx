@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { db, type ChildContract, type DaySlot } from "../db";
-import { WEEKDAY_LABELS, inputToMin, minToInput, todayISO } from "../lib/dates";
+import { WEEKDAY_LABELS, fmtDateLong, inputToMin, minToInput, todayISO } from "../lib/dates";
 import { effectiveRatePence, scheduleOn } from "../lib/schedule";
 import { formatPence } from "../engine/invoice";
 import { BAND_LABELS, ageBandOn, surreyRateFor } from "../data/surrey";
@@ -172,13 +172,26 @@ export function ChildForm({
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </label>
         <label className="field">
-          <span>End date (when leaving)</span>
+          <span className="field-head">
+            End date (when leaving)
+            {endDate && (
+              <button
+                className="link"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setEndDate("");
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </span>
           <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </label>
       </div>
       <p className="hint">
         {endDate
-          ? `No hours are scheduled or charged after ${endDate}.`
+          ? `No hours are scheduled or charged after ${fmtDateLong(endDate)}.`
           : "Leave the end date blank while they're still with you."}
       </p>
 
@@ -195,8 +208,8 @@ export function ChildForm({
       </div>
       {existing && poundsToPence(rateStr) !== currentRate && (
         <p className="hint">
-          Rate change — {formatPence(currentRate)}/hr stays on invoices before {rateFrom}; the new
-          rate applies from then on.
+          Rate change — {formatPence(currentRate)}/hr stays on invoices before{" "}
+          {fmtDateLong(rateFrom)}; the new rate applies from then on.
         </p>
       )}
 
@@ -209,15 +222,15 @@ export function ChildForm({
           </label>
           {scheduleChanged ? (
             <p className="hint">
-              Hours changed — days before {schedFrom} keep the old pattern, so past invoices stay
-              exactly as they were.
+              Hours changed — days before {fmtDateLong(schedFrom)} keep the old pattern, so past
+              invoices stay exactly as they were.
             </p>
           ) : (
             existing.schedules.length > 1 && (
               <p className="hint">
                 {existing.schedules.length} versions on file (from{" "}
-                {existing.schedules.map((v) => v.fromDate).join(", ")}). Showing the pattern in force
-                today.
+                {existing.schedules.map((v) => fmtDateLong(v.fromDate)).join(", ")}). Showing the
+                pattern in force today.
               </p>
             )
           )}
