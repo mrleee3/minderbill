@@ -42,7 +42,10 @@ export function UpdateBanner() {
   const restart = () => {
     const u = new URL(location.href);
     u.searchParams.set("v", liveBuild);
-    location.replace(u.toString());
+    // reload() rather than replace(): a same-document navigation is what
+    // leaves iOS holding the previous viewport metrics.
+    history.replaceState(null, "", u.toString());
+    location.reload();
   };
 
   return (

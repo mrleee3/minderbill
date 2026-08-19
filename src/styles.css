@@ -42,6 +42,7 @@ body {
 }
 
 #root {
+  position: relative;
   height: 100dvh; /* fallback until JS measures */
   height: var(--app-h, 100dvh);
   display: flex;
@@ -102,7 +103,11 @@ body {
 
 /* ---- Tab bar ---- */
 .tabbar {
-  position: fixed;
+  /* Absolute inside the measured #root rather than fixed to the viewport:
+     iOS sometimes reports a stale viewport after an in-app reload, which
+     left the bar floating. Sizing from our own measurement removes that
+     dependency, and re-measuring on load/foreground corrects it. */
+  position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
@@ -144,7 +149,7 @@ body.sheet-open .tabbar {
 .tab.active { color: var(--ink); }
 .tab-indicator {
   position: absolute;
-  top: 3px;
+  top: 11px; /* tabbar padding-top 3 + tab padding-top 8 */
   left: 8px;
   width: calc((100% - 16px) / 5);
   height: 30px;
