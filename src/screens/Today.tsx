@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract, type DayLog } from "../db";
 import { addDays, fmtDateLong, fmtHours, minToInput, todayISO,
@@ -29,6 +29,13 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
   const closure = closureOn(date, closures);
   const confirm = useLiveQuery(() => db.confirms.get(date), [date]);
   const isConfirmed = !!confirm;
+  const [justConfirmed, setJustConfirmed] = useState(false);
+
+  const doConfirm = async () => {
+    await confirmDay(date);
+    setJustConfirmed(true);
+    window.setTimeout(() => setJustConfirmed(false), 1200);
+  };
 
   const logFor = (c: ChildContract): DayLog | undefined =>
     logs.find((l) => l.childId === c.id);
@@ -78,8 +85,13 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </div>
       )}
 
-      {attending.map(({ child, colour, resolved }) => (
-        <button key={child.id} className="child-card" onClick={() => setEditing(child)}>
+      {attending.map(({ child, colour, resolved }, i) => (
+        <button
+          key={child.id}
+          className="child-card"
+          onClick={() => setEditing(child)}
+          style={justConfirmed ? ({ "--stagger": `${i * 70}ms` } as CSSProperties) : undefined}
+        >
           <span className="avatar" style={{ background: colour }}>
             <span className="avatar-letter">{child.name[0]?.toUpperCase()}</span>
           </span>
@@ -111,7 +123,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
                   : resolved!.source === "log"
                     ? "adjusted"
                     : "planned"
-            }`}
+            }${justConfirmed ? " pop" : ""}`}
           >
             {isConfirmed
               ? "✓ Confirmed"
@@ -151,7 +163,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
       )}
 
       {attending.length > 0 && (
-        <div className={`confirm-bar${isConfirmed ? " done" : ""}`}>
+        <div className={`confirm-bar${isConfirmed ? " done" : ""}${justConfirmed ? " celebrate" : ""}`}>
           {isConfirmed ? (
             <>
               <span className="confirm-text">
@@ -175,7 +187,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
                 <strong>Everything right for {isToday ? "today" : "this day"}?</strong>
                 <span className="hint">Adjust any child above first, then confirm.</span>
               </span>
-              <button className="btn-primary inline" onClick={() => confirmDay(date)}>
+              <button className="btn-primary inline" onClick={doConfirm}>
                 Confirm day
               </button>
             </>

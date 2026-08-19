@@ -356,7 +356,8 @@ body.sheet-open .tabbar {
   gap: 3px; cursor: pointer; font: inherit; padding: 0;
 }
 .month-day.busy { background: var(--card); border-color: var(--mist); }
-.month-day.today { border-color: var(--marigold); }
+.month-day.today { border-color: var(--ink); }
+.month-day.today .num { font-weight: 800; }
 .month-day .num { font-size: 13px; font-variant-numeric: tabular-nums; }
 .month-day .dots { display: flex; gap: 2px; min-height: 5px; }
 .month-day .dots i { width: 5px; height: 5px; border-radius: 50%; }
@@ -782,7 +783,6 @@ button.child-card { padding: 12px 14px; }
   border-color: rgba(78, 155, 111, 0.35);
 }
 .confirm-bar.done .confirm-text strong { color: var(--leaf-deep); }
-.month-day.confirmed .num { color: var(--ink-60); }
 
 /* Nudge banner */
 .nudge {
@@ -806,19 +806,51 @@ button.child-card { padding: 12px 14px; }
 }
 
 /* Calendar: days still needing confirmation */
-.month-day.needs-confirm {
-  box-shadow: inset 0 0 0 1.5px var(--marigold);
-  border-radius: 10px;
+/* Day states are all rings, distinguished by colour:
+   amber = still to confirm, green = confirmed, dark = today. */
+.month-day.needs-confirm { box-shadow: inset 0 0 0 1.6px var(--marigold); border-radius: 10px; }
+.month-day.confirmed { box-shadow: inset 0 0 0 1.6px var(--leaf); border-radius: 10px; }
+/* Today keeps its dark ring and adds the state colour as an outer halo. */
+.month-day.today.confirmed { box-shadow: inset 0 0 0 1.6px var(--leaf), 0 0 0 1.5px var(--ink); }
+.month-day.today.needs-confirm { box-shadow: inset 0 0 0 1.6px var(--marigold), 0 0 0 1.5px var(--ink); }
+.swatch.ring-unconfirmed,
+.swatch.ring-confirmed,
+.swatch.ring-today {
+  height: 12px; width: 12px; border-radius: 3px; background: transparent;
 }
-.month-day.confirmed .num { color: var(--ink-60); }
-.swatch.unconfirmed {
-  height: 12px; width: 12px; border-radius: 3px;
-  background: transparent; box-shadow: inset 0 0 0 1.5px var(--marigold);
-}
+.swatch.ring-unconfirmed { box-shadow: inset 0 0 0 1.6px var(--marigold); }
+.swatch.ring-confirmed { box-shadow: inset 0 0 0 1.6px var(--leaf); }
+.swatch.ring-today { box-shadow: inset 0 0 0 1.6px var(--ink); }
 
 /* Loading placeholder — prevents empty states flashing before data lands. */
 .screen-skeleton { min-height: 40vh; }
-.month-day .day-tick {
-  position: absolute; bottom: 2px; right: 4px;
-  font-size: 9px; line-height: 1; color: var(--leaf); font-weight: 700;
+
+/* ---- Confirm-day celebration ----
+   Chips flip to green in a quick left-to-right stagger, and the bar gives a
+   single soft pulse. Short enough to feel like feedback, not a cutscene. */
+@media (prefers-reduced-motion: no-preference) {
+  .status-chip.confirmed.pop {
+    animation: chip-pop 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation-delay: var(--stagger, 0ms);
+  }
+  @keyframes chip-pop {
+    0% { transform: scale(0.72); opacity: 0.2; }
+    55% { transform: scale(1.12); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .confirm-bar.celebrate { animation: bar-pulse 0.6s ease-out; }
+  @keyframes bar-pulse {
+    0% { transform: scale(0.985); box-shadow: 0 0 0 0 rgba(78, 155, 111, 0.45); }
+    45% { transform: scale(1.012); box-shadow: 0 0 0 8px rgba(78, 155, 111, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(78, 155, 111, 0); }
+  }
+
+  .confirm-bar.done .confirm-text strong { animation: tick-in 0.4s ease-out both; }
+  @keyframes tick-in {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: none; }
+  }
 }
+
+/* --stagger is set inline on the card and inherits down to the chip. */

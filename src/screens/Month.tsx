@@ -134,7 +134,6 @@ export function Month() {
                 }}
               />
               <span className="num">{parseISO(iso).d}</span>
-              {confirmed.has(iso) && <span className="day-tick" aria-hidden="true">✓</span>}
               <span className="dots">
                 {dots.slice(0, 4).map((d, i) => (
                   <i key={i} style={{ background: d.absent ? "transparent" : d.colour, borderColor: d.absent ? "var(--clay)" : d.colour }} className={d.absent ? "d-ring" : ""} />
@@ -146,8 +145,9 @@ export function Month() {
       </div>
       <p className="day-total hours">{fmtHours(totalMinutes)} across {monthLabel(viewDate)}</p>
       <div className="legend">
-        <span><i className="swatch unconfirmed" /> To confirm</span>
-        <span><i className="swatch" style={{ background: "var(--leaf)" }} /> Confirmed</span>
+        <span><i className="swatch ring-today" /> Today</span>
+        <span><i className="swatch ring-unconfirmed" /> To confirm</span>
+        <span><i className="swatch ring-confirmed" /> Confirmed</span>
         <span><i className="swatch term" /> Outside term</span>
         <span><i className="swatch" style={{ background: CLOSURE_COLOURS.minderHoliday }} /> {CLOSURE_LABELS.minderHoliday}</span>
         <span><i className="swatch" style={{ background: CLOSURE_COLOURS.bankHoliday }} /> {CLOSURE_LABELS.bankHoliday}</span>
