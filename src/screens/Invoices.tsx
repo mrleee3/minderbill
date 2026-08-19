@@ -10,6 +10,7 @@ import { ABSENCE_LABELS } from "../components/DayEditor";
 import { Sheet } from "../components/Sheet";
 import { A4Preview } from "../components/A4Preview";
 import { renderPrintHTML } from "../lib/invoiceHtml";
+import { InvoiceActions } from "../components/InvoiceActions";
 import type { TermBlock } from "../data/surrey";
 
 function prevMonthPeriod(): string {
@@ -164,13 +165,6 @@ function InvoiceDetail({
     await db.invoices.delete(saved.id);
   }
 
-  function printInvoice() {
-    const el = document.getElementById("print-root");
-    if (!el) return;
-    el.innerHTML = renderPrintHTML(child, period, lines, total, business, saved?.version ?? 1);
-    window.print();
-  }
-
   return (
     <div className="form">
       {/* ---- Funding summary: the heart of the invoice ---- */}
@@ -304,7 +298,14 @@ function InvoiceDetail({
         </button>
       ) : (
         <>
-          <button className="btn-primary" onClick={printInvoice}>Print / save PDF</button>
+          <InvoiceActions
+            child={child}
+            period={period}
+            lines={lines}
+            total={total}
+            business={business}
+            version={saved!.version}
+          />
           <button className="btn-quiet" onClick={togglePaid}>
             {paid ? "Mark as unpaid" : "Mark as paid"}
           </button>

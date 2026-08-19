@@ -7,6 +7,7 @@ import type { DetailedLine } from "../engine/monthInvoice";
 import { renderPrintHTML } from "../lib/invoiceHtml";
 import { getBusiness, type Business } from "../lib/settings";
 import { A4Preview } from "./A4Preview";
+import { InvoiceActions } from "./InvoiceActions";
 
 /**
  * A child's invoice history: newest first, swipe left/right to move between
@@ -188,6 +189,16 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
         </div>
       )}
       {latest.length > 1 && <p className="hint center">Swipe the invoice for other months.</p>}
+      {business && (
+        <InvoiceActions
+          child={child}
+          period={inv.period}
+          lines={inv.lines as DetailedLine[]}
+          total={inv.totalPence}
+          business={business}
+          version={inv.version}
+        />
+      )}
     </div>
   );
 }

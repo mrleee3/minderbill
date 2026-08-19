@@ -40,7 +40,12 @@ export interface ChildContract {
     minderSick: "full" | "half" | "none";
     bankHoliday: "full" | "half" | "none";
   };
-  payer?: { name?: string; method?: ("bank" | "tfc")[]; tfcReference?: string };
+  payer?: {
+    name?: string;
+    email?: string;
+    method?: ("bank" | "tfc")[];
+    tfcReference?: string;
+  };
 }
 
 export type AbsenceReason =

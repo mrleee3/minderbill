@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
 import {
   IconChildren,
@@ -64,7 +64,8 @@ export default function App() {
         <Screen tab={tab} date={date} setDate={setDate} />
       </main>
       <div id="print-root" aria-hidden="true" />
-      <nav className="tabbar">
+      <nav className="tabbar" style={{ "--tab-index": TABS.findIndex((t) => t.id === tab) } as CSSProperties}>
+        <span className="tab-indicator" aria-hidden="true" />
         {TABS.map((t) => (
           <button
             key={t.id}

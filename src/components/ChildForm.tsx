@@ -74,6 +74,7 @@ export function ChildForm({
     }
   );
   const [payerName, setPayerName] = useState(existing?.payer?.name ?? "");
+  const [payerEmail, setPayerEmail] = useState(existing?.payer?.email ?? "");
   const [tfcRef, setTfcRef] = useState(existing?.payer?.tfcReference ?? "");
 
   const allChildren = useLiveQuery(() => db.children.toArray(), []) ?? [];
@@ -138,6 +139,7 @@ export function ChildForm({
       policies,
       payer: {
         name: payerName.trim() || undefined,
+        email: payerEmail.trim() || undefined,
         method: tfcRef ? ["bank", "tfc"] : ["bank"],
         tfcReference: tfcRef.trim() || undefined,
       },
@@ -346,6 +348,19 @@ export function ChildForm({
           <span>Parent name</span>
           <input value={payerName} onChange={(e) => setPayerName(e.target.value)} />
         </label>
+        <label className="field">
+          <span>Parent email</span>
+          <input
+            type="email"
+            inputMode="email"
+            autoCapitalize="off"
+            value={payerEmail}
+            onChange={(e) => setPayerEmail(e.target.value)}
+            placeholder="for emailing invoices"
+          />
+        </label>
+      </div>
+      <div className="field-row">
         <label className="field">
           <span>TFC reference (optional)</span>
           <input value={tfcRef} onChange={(e) => setTfcRef(e.target.value)} placeholder="From NS&I payments" />

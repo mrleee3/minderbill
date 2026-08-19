@@ -107,6 +107,7 @@ body {
   right: 0;
   bottom: 0;
   z-index: 30;
+  isolation: isolate;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   border-top: 1px solid var(--mist);
@@ -141,11 +142,29 @@ body.sheet-open .tabbar {
 }
 .tab svg { display: block; width: 24px; height: 24px; }
 .tab.active { color: var(--ink); }
-.tab.active .icon-wrap {
+.tab-indicator {
+  position: absolute;
+  top: 3px;
+  left: 8px;
+  width: calc((100% - 16px) / 5);
+  height: 30px;
+  pointer-events: none;
+  transform: translateX(calc(var(--tab-index, 0) * 100%));
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.tab-indicator::before {
+  content: "";
+  position: absolute;
+  inset: 0 28%;
   background: var(--marigold-soft);
   border-radius: 10px;
 }
-.tab .icon-wrap { padding: 3px 14px; display: flex; }
+@media (prefers-reduced-motion: reduce) {
+  .tab-indicator { transition: none; }
+}
+.tab .icon-wrap { padding: 3px 14px; display: flex; position: relative; z-index: 1; }
+.tab .icon-wrap svg { transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1); }
+.tab.active .icon-wrap svg { transform: translateY(-1px) scale(1.06); }
 
 /* ---- Update banner (red restart pill, Waymark pattern) ---- */
 .update-pill {
