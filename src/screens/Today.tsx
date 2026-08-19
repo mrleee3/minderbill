@@ -7,6 +7,7 @@ import { addDays, fmtDateLong, fmtHours, minToInput, todayISO,
 import { resolveDay } from "../lib/schedule";
 import { childColour, getClosures } from "../lib/settings";
 import { CLOSURE_COLOURS, CLOSURE_LABELS, closureOn, type Closure } from "../data/closures";
+import { confirmDay, unconfirmDay } from "../lib/confirm";
 import { Sheet } from "../components/Sheet";
 import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
@@ -24,6 +25,8 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
   }, []);
 
   const closure = closureOn(date, closures);
+  const confirm = useLiveQuery(() => db.confirms.get(date), [date]);
+  const isConfirmed = !!confirm;
 
   const logFor = (c: ChildContract): DayLog | undefined =>
     logs.find((l) => l.childId === c.id);
@@ -90,6 +93,11 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
                 {fmtHours(resolved!.minutes)}
               </span>
             )}
+            {isConfirmed && (resolved!.source === "log" || resolved!.absence) && (
+              <span className="card-note">
+                {resolved!.absence ? ABSENCE_LABELS[resolved!.absence] : "Adjusted from planned"}
+              </span>
+            )}
             {resolved!.note && <span className="card-note">{resolved!.note}</span>}
           </span>
           <span className={`status-chip ${resolved!.absence ? "absent" : resolved!.source === "log" ? "adjusted" : "planned"}`}>
@@ -122,6 +130,39 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
             </button>
           ))}
         </>
+      )}
+
+      {attending.length > 0 && (
+        <div className={`confirm-bar${isConfirmed ? " done" : ""}`}>
+          {isConfirmed ? (
+            <>
+              <span className="confirm-text">
+                <strong>✓ Day confirmed</strong>
+                <span className="hint">
+                  {new Date(confirm!.at).toLocaleString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </span>
+              <button className="btn-quiet inline" onClick={() => unconfirmDay(date)}>
+                Undo
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="confirm-text">
+                <strong>Everything right for {isToday ? "today" : "this day"}?</strong>
+                <span className="hint">Adjust any child above first, then confirm.</span>
+              </span>
+              <button className="btn-primary inline" onClick={() => confirmDay(date)}>
+                Confirm day
+              </button>
+            </>
+          )}
+        </div>
       )}
 
       <Sheet

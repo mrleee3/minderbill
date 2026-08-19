@@ -23,6 +23,7 @@ import { CLOSURE_COLOURS, CLOSURE_LABELS, closureOn, type Closure } from "../dat
 import type { TermBlock } from "../data/surrey";
 import { ABSENCE_LABELS } from "../components/DayEditor";
 import { ChildMonthHistory } from "../components/ChildMonthHistory";
+import { hasAttendance } from "../lib/confirm";
 import { useSwipe } from "../lib/useSwipe";
 
 export function Month() {
@@ -52,6 +53,12 @@ export function Month() {
       [monthPrefix]
     ) ?? [];
   const today = todayISO();
+  const confirms =
+    useLiveQuery(
+      () => db.confirms.where("date").between(days[0], days[days.length - 1], true, true).toArray(),
+      [monthPrefix]
+    ) ?? [];
+  const confirmed = new Set(confirms.map((c) => c.date));
 
   const logFor = (c: ChildContract, iso: string): DayLog | undefined =>
     logs.find((l) => l.childId === c.id && l.date === iso);
@@ -111,10 +118,12 @@ export function Month() {
             })
             .filter(Boolean) as { colour: string; absent: boolean }[];
           const closure = closureOn(iso, closures);
+          const needsConfirm =
+            iso < today && !confirmed.has(iso) && hasAttendance(children, iso, logs, closures);
           return (
             <button
               key={iso}
-              className={`month-day${iso === today ? " today" : ""}${dots.length ? " busy" : ""}${iso === selDay ? " sel" : ""}${terms.length && !inTerm(iso) ? " out-of-term" : ""}`}
+              className={`month-day${iso === today ? " today" : ""}${dots.length ? " busy" : ""}${iso === selDay ? " sel" : ""}${terms.length && !inTerm(iso) ? " out-of-term" : ""}${needsConfirm ? " needs-confirm" : ""}${confirmed.has(iso) ? " confirmed" : ""}`}
               onClick={() => setSelDay(iso)}
               title={closure?.label}
             >
@@ -136,6 +145,7 @@ export function Month() {
       </div>
       <p className="day-total hours">{fmtHours(totalMinutes)} across {monthLabel(viewDate)}</p>
       <div className="legend">
+        <span><i className="swatch unconfirmed" /> To confirm</span>
         <span><i className="swatch term" /> Outside term</span>
         <span><i className="swatch" style={{ background: CLOSURE_COLOURS.minderHoliday }} /> {CLOSURE_LABELS.minderHoliday}</span>
         <span><i className="swatch" style={{ background: CLOSURE_COLOURS.bankHoliday }} /> {CLOSURE_LABELS.bankHoliday}</span>

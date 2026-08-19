@@ -6,6 +6,7 @@ import { buildMonthInvoice, type DetailedLine, type MonthInvoiceResult } from ".
 import { formatPence } from "../engine/invoice";
 import { getBusiness, getClosures, getTermBlocks, childColour, type Business } from "../lib/settings";
 import type { Closure } from "../data/closures";
+import { unconfirmedInPeriod } from "../lib/confirm";
 import { ABSENCE_LABELS } from "../components/DayEditor";
 import { Sheet } from "../components/Sheet";
 import { A4Preview } from "../components/A4Preview";
@@ -26,12 +27,17 @@ export function Invoices() {
   const [closures, setClosures] = useState<Closure[]>([]);
   const [business, setBiz] = useState<Business | null>(null);
   const [open, setOpen] = useState<ChildContract | null>(null);
+  const [unconfirmed, setUnconfirmed] = useState(0);
 
   useEffect(() => {
     getTermBlocks().then(setBlocks);
     getClosures().then(setClosures);
     getBusiness().then(setBiz);
   }, []);
+
+  useEffect(() => {
+    unconfirmedInPeriod(period).then(setUnconfirmed);
+  }, [period, invoices.length]);
 
   const latestFor = (c: ChildContract): Invoice | undefined =>
     invoices
@@ -45,6 +51,13 @@ export function Invoices() {
         <div className="date-label"><strong>{monthLabel(`${period}-01`)}</strong></div>
         <button className="nav-btn" onClick={() => setPeriod(addMonths(`${period}-01`, 1).slice(0, 7))} aria-label="Next month">›</button>
       </div>
+
+      {unconfirmed > 0 && (
+        <p className="hint warn">
+          {unconfirmed} day{unconfirmed > 1 ? "s" : ""} in {monthLabel(`${period}-01`)} not yet
+          confirmed. You can still invoice, but it's worth checking those days first.
+        </p>
+      )}
 
       {children.length === 0 && (
         <div className="empty">

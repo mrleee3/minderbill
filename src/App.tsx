@@ -12,7 +12,11 @@ import { Month } from "./screens/Month";
 import { Children } from "./screens/Children";
 import { Invoices } from "./screens/Invoices";
 import { Settings } from "./screens/Settings";
-import { todayISO } from "./lib/dates";
+import { todayISO, fmtDateLong } from "./lib/dates";
+import { useEffect } from "react";
+import { findUnconfirmed } from "./lib/confirm";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "./db";
 
 type Tab = "today" | "month" | "invoices" | "children" | "settings";
 
@@ -51,6 +55,26 @@ function Screen({
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
   const [date, setDate] = useState(todayISO());
+  const [pending, setPending] = useState<string[]>([]);
+  const [dismissed, setDismissed] = useState(false);
+
+  // Recheck whenever logs or confirmations change, so the nudge clears the
+  // moment she confirms.
+  const stamp = useLiveQuery(
+    async () => `${await db.confirms.count()}-${await db.dayLogs.count()}-${await db.children.count()}`,
+    []
+  );
+  useEffect(() => {
+    findUnconfirmed().then(setPending);
+  }, [stamp]);
+
+  const openOldest = () => {
+    const oldest = pending[pending.length - 1];
+    if (!oldest) return;
+    setDate(oldest);
+    setTab("today");
+  };
+
   return (
     <>
       <UpdateBanner />
@@ -60,6 +84,30 @@ export default function App() {
         </h1>
         <span className="build-id">{__BUILD_ID__}</span>
       </header>
+      {pending.length > 0 && !dismissed && tab !== "today" && (
+        <button className="nudge" onClick={openOldest}>
+          <span>
+            <strong>
+              {pending.length} day{pending.length > 1 ? "s" : ""} to confirm
+            </strong>
+            <span className="hint">
+              Oldest: {fmtDateLong(pending[pending.length - 1])}
+            </span>
+          </span>
+          <span
+            className="nudge-x"
+            role="button"
+            aria-label="Dismiss"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDismissed(true);
+            }}
+          >
+            ✕
+          </span>
+        </button>
+      )}
+
       <main className="screen">
         <Screen tab={tab} date={date} setDate={setDate} />
       </main>
@@ -74,6 +122,9 @@ export default function App() {
           >
             <span className="icon-wrap">
               <t.Icon active={tab === t.id} />
+              {t.id === "today" && pending.length > 0 && (
+                <span className="tab-badge">{pending.length > 9 ? "9+" : pending.length}</span>
+              )}
             </span>
             {t.label}
           </button>

@@ -79,6 +79,16 @@ export interface Invoice {
   paidPence: number;
 }
 
+/**
+ * A confirmed day. Confirmation is per DAY, not per child: at the end of the
+ * day she confirms that everyone's hours are right, which is one tap rather
+ * than one per child. Absence of a row means "not yet confirmed".
+ */
+export interface DayConfirm {
+  date: string; // ISO date, primary key
+  at: string; // ISO timestamp of confirmation
+}
+
 export interface Setting {
   key: string;
   value: unknown; // term calendar, business details, invoice footer, etc.
@@ -88,6 +98,7 @@ export const db = new Dexie("minderbill") as Dexie & {
   children: EntityTable<ChildContract, "id">;
   dayLogs: EntityTable<DayLog, "id">;
   invoices: EntityTable<Invoice, "id">;
+  confirms: EntityTable<DayConfirm, "date">;
   settings: EntityTable<Setting, "key">;
 };
 
@@ -122,3 +133,12 @@ db.version(2)
         delete c.schedule;
       })
   );
+
+// v3: per-day confirmation records (the childminder's daily attendance sign-off).
+db.version(3).stores({
+  children: "++id, name",
+  dayLogs: "++id, [childId+date], date, childId",
+  invoices: "++id, [childId+period], period, childId",
+  confirms: "date",
+  settings: "key",
+});
