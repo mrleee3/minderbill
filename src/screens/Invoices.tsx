@@ -20,7 +20,9 @@ function prevMonthPeriod(): string {
 
 export function Invoices() {
   const [period, setPeriod] = useState(prevMonthPeriod());
-  const children = useLiveQuery(() => db.children.toArray(), []) ?? [];
+  const childrenQ = useLiveQuery(() => db.children.toArray(), []);
+  const loading = childrenQ === undefined;
+  const children = childrenQ ?? [];
   const invoices =
     useLiveQuery(() => db.invoices.where("period").equals(period).toArray(), [period]) ?? [];
   const [blocks, setBlocks] = useState<TermBlock[]>([]);
@@ -59,7 +61,9 @@ export function Invoices() {
         </p>
       )}
 
-      {children.length === 0 && (
+      {loading && <div className="screen-skeleton" aria-hidden="true" />}
+
+      {!loading && children.length === 0 && (
         <div className="empty">
           <span className="glyph">📄</span>
           <p><strong>No children yet</strong></p>

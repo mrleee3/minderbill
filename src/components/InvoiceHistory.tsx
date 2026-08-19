@@ -14,11 +14,11 @@ import { InvoiceActions } from "./InvoiceActions";
  * them, or jump straight to a month with the picker.
  */
 export function InvoiceHistory({ child }: { child: ChildContract }) {
-  const invoices =
-    useLiveQuery(
-      () => db.invoices.where("childId").equals(child.id!).toArray(),
-      [child.id]
-    ) ?? [];
+  const invoicesQ = useLiveQuery(
+    () => db.invoices.where("childId").equals(child.id!).toArray(),
+    [child.id]
+  );
+  const invoices = invoicesQ ?? [];
   const [business, setBusiness] = useState<Business | null>(null);
   const [index, setIndex] = useState(0);
 
@@ -87,6 +87,10 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
     else if (dragX >= threshold) go(index - 1);
     else setDragX(0);
   };
+
+  if (invoicesQ === undefined || !business) {
+    return <div className="screen-skeleton" aria-hidden="true" />;
+  }
 
   if (latest.length === 0) {
     return (
@@ -163,7 +167,7 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
             <div className="carousel-slide" key={`${item.period}-v${item.version}`}>
               {/* Only the current invoice and its immediate neighbours are
                   rendered; the rest are spacers until they come into range. */}
-              {business && Math.abs(i - index) <= 1 ? (
+              {Math.abs(i - index) <= 1 ? (
                 <A4Preview
                   html={renderPrintHTML(
                     child,
@@ -189,7 +193,7 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
         </div>
       )}
       {latest.length > 1 && <p className="hint center">Swipe the invoice for other months.</p>}
-      {business && (
+      {(
         <InvoiceActions
           child={child}
           period={inv.period}

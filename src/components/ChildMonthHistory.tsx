@@ -21,7 +21,7 @@ export function ChildMonthHistory({
   closures: Closure[];
 }) {
   const days = monthDays(month);
-  const logs =
+  const logsQ =
     useLiveQuery(
       () =>
         db.dayLogs
@@ -30,7 +30,8 @@ export function ChildMonthHistory({
           .and((l) => l.date >= days[0] && l.date <= days[days.length - 1])
           .toArray(),
       [child.id, month]
-    ) ?? [];
+    );
+  const logs = logsQ ?? [];
   const [editing, setEditing] = useState<string | null>(null);
 
   const rows = days
@@ -44,6 +45,8 @@ export function ChildMonthHistory({
   const attended = rows.filter((r) => !r.resolved!.absence);
   const totalMin = attended.reduce((s, r) => s + r.resolved!.minutes, 0);
   const absences = rows.filter((r) => r.resolved!.absence);
+
+  if (logsQ === undefined) return <div className="screen-skeleton" aria-hidden="true" />;
 
   return (
     <>

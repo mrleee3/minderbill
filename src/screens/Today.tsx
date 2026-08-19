@@ -12,7 +12,9 @@ import { Sheet } from "../components/Sheet";
 import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
 export function Today({ date, setDate }: { date: string; setDate: (d: string) => void }) {
-  const allChildren = useLiveQuery(() => db.children.toArray(), []) ?? [];
+  const childrenQ = useLiveQuery(() => db.children.toArray(), []);
+  const loading = childrenQ === undefined;
+  const allChildren = childrenQ ?? [];
   // Children who have left are archived — hide them once past their end date.
   const children = allChildren.filter((c) => !c.endDate || c.endDate >= date);
   const logs =
@@ -66,7 +68,9 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </div>
       )}
 
-      {children.length === 0 && (
+      {loading && <div className="screen-skeleton" aria-hidden="true" />}
+
+      {!loading && children.length === 0 && (
         <div className="empty">
           <span className="glyph">☀️</span>
           <p><strong>Nothing to log yet</strong></p>
@@ -93,15 +97,29 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
                 {fmtHours(resolved!.minutes)}
               </span>
             )}
-            {isConfirmed && (resolved!.source === "log" || resolved!.absence) && (
-              <span className="card-note">
-                {resolved!.absence ? ABSENCE_LABELS[resolved!.absence] : "Adjusted from planned"}
-              </span>
+            {isConfirmed && resolved!.source === "log" && !resolved!.absence && (
+              <span className="card-note">Adjusted from planned</span>
             )}
             {resolved!.note && <span className="card-note">{resolved!.note}</span>}
           </span>
-          <span className={`status-chip ${resolved!.absence ? "absent" : resolved!.source === "log" ? "adjusted" : "planned"}`}>
-            {resolved!.absence ? "Absent" : resolved!.source === "log" ? "Adjusted" : "As planned"}
+          <span
+            className={`status-chip ${
+              isConfirmed
+                ? "confirmed"
+                : resolved!.absence
+                  ? "absent"
+                  : resolved!.source === "log"
+                    ? "adjusted"
+                    : "planned"
+            }`}
+          >
+            {isConfirmed
+              ? "✓ Confirmed"
+              : resolved!.absence
+                ? "Absent"
+                : resolved!.source === "log"
+                  ? "Adjusted"
+                  : "As planned"}
           </span>
         </button>
       ))}

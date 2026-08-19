@@ -19,7 +19,9 @@ type SheetState =
   | { mode: "invoices"; child: ChildContract };
 
 export function Children() {
-  const children = useLiveQuery(() => db.children.toArray(), []) ?? [];
+  const childrenQ = useLiveQuery(() => db.children.toArray(), []);
+  const loading = childrenQ === undefined;
+  const children = childrenQ ?? [];
   const [sheet, setSheet] = useState<SheetState>({ mode: "closed" });
   const today = todayISO();
 
@@ -67,7 +69,9 @@ export function Children() {
 
   return (
     <>
-      {children.length === 0 ? (
+      {loading ? (
+        <div className="screen-skeleton" aria-hidden="true" />
+      ) : children.length === 0 ? (
         <div className="empty">
           <span className="glyph">🧒</span>
           <p><strong>No children yet</strong></p>
@@ -85,10 +89,12 @@ export function Children() {
         </div>
       )}
 
-      <button className="btn-primary" onClick={() => setSheet({ mode: "new" })}>
-        + Add child
-      </button>
-      {children.length === 0 && (
+      {!loading && (
+        <button className="btn-primary" onClick={() => setSheet({ mode: "new" })}>
+          + Add child
+        </button>
+      )}
+      {!loading && children.length === 0 && (
         <button className="btn-quiet" onClick={() => addDemoChildren()}>
           Or add two demo children to see it working
         </button>
