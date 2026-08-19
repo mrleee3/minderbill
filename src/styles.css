@@ -103,9 +103,9 @@ body {
 
 /* ---- Tab bar ---- */
 .tabbar {
-  /* Fixed to the viewport: measured heights (dvh and innerHeight) both come
-     back too small in this PWA, but the fixed-position viewport is correct.
-     A reflow kick after load handles the stale-viewport case (see main.tsx). */
+  /* `bottom: 0` is only the pre-JS fallback. useVisualViewportBar() anchors
+     the bar by `top` from visualViewport, because layout-viewport-derived
+     bottom anchoring is exactly what goes stale after an in-app reload. */
   position: fixed;
   left: 0;
   right: 0;

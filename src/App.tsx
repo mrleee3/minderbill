@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from "react";
+import React, { useEffect, useRef, useState, type CSSProperties } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
 import {
   IconChildren,
@@ -13,7 +13,6 @@ import { Children } from "./screens/Children";
 import { Invoices } from "./screens/Invoices";
 import { Settings } from "./screens/Settings";
 import { todayISO, fmtDateLong } from "./lib/dates";
-import { useEffect } from "react";
 import { findUnconfirmed } from "./lib/confirm";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "./db";
@@ -52,10 +51,71 @@ function Screen({
   }
 }
 
+/**
+ * Anchors the tab bar to the bottom of the VISUAL viewport.
+ *
+ * Why not `bottom: 0`? Fixed-position `bottom` resolves against the layout
+ * viewport's height, and iOS standalone PWAs keep a stale layout viewport
+ * after an in-app reload (correct again only after a force-quit) — the root
+ * cause of the floating tab bar. `visualViewport` stays accurate through
+ * reloads, so the bar's `top` is computed from it and re-computed on its
+ * events. The stale number is no longer part of the calculation at all.
+ */
+function useVisualViewportBar() {
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const bar = ref.current;
+    if (!bar) return;
+    let lastBottom = 0;
+
+    const place = () => {
+      const vv = window.visualViewport;
+      let bottomEdge: number;
+      if (vv) {
+        // A keyboard-driven shrink would pull the bar up over the keyboard;
+        // hold the last stable position instead.
+        if (lastBottom && vv.height < window.innerHeight * 0.75) return;
+        bottomEdge = vv.offsetTop + vv.height;
+      } else {
+        bottomEdge = window.innerHeight;
+      }
+      lastBottom = bottomEdge;
+      bar.style.top = `${bottomEdge - bar.offsetHeight}px`;
+      bar.style.bottom = "auto";
+    };
+
+    place();
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", place);
+    vv?.addEventListener("scroll", place);
+    window.addEventListener("orientationchange", place);
+    window.addEventListener("pageshow", place);
+    const onVis = () => document.visibilityState === "visible" && place();
+    document.addEventListener("visibilitychange", onVis);
+    // The bar's own height changes when iOS resolves the safe-area inset a
+    // beat after load — reposition whenever it does.
+    const ro = new ResizeObserver(place);
+    ro.observe(bar);
+
+    return () => {
+      vv?.removeEventListener("resize", place);
+      vv?.removeEventListener("scroll", place);
+      window.removeEventListener("orientationchange", place);
+      window.removeEventListener("pageshow", place);
+      document.removeEventListener("visibilitychange", onVis);
+      ro.disconnect();
+    };
+  }, []);
+
+  return ref;
+}
+
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
   const [date, setDate] = useState(todayISO());
   const [pending, setPending] = useState<string[]>([]);
+  const barRef = useVisualViewportBar();
   const [dismissed, setDismissed] = useState(false);
 
   // Recheck whenever logs or confirmations change, so the nudge clears the
@@ -112,7 +172,11 @@ export default function App() {
         <Screen tab={tab} date={date} setDate={setDate} />
       </main>
       <div id="print-root" aria-hidden="true" />
-      <nav className="tabbar" style={{ "--tab-index": TABS.findIndex((t) => t.id === tab) } as CSSProperties}>
+      <nav
+        ref={barRef as React.RefObject<HTMLElement>}
+        className="tabbar"
+        style={{ "--tab-index": TABS.findIndex((t) => t.id === tab) } as CSSProperties}
+      >
         <span className="tab-indicator" aria-hidden="true" />
         {TABS.map((t) => (
           <button
