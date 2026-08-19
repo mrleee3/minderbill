@@ -62,7 +62,13 @@ export function Month() {
     setSelDay(next.slice(0, 7) === today.slice(0, 7) ? today : next);
   };
 
-  const swipe = useSwipe(() => shiftMonth(1), () => shiftMonth(-1));
+  const [slide, setSlide] = useState<"" | "in-left" | "in-right">("");
+  const shiftMonthAnimated = (n: number) => {
+    shiftMonth(n);
+    setSlide(n > 0 ? "in-right" : "in-left");
+    window.setTimeout(() => setSlide(""), 240);
+  };
+  const swipe = useSwipe(() => shiftMonthAnimated(1), () => shiftMonthAnimated(-1));
   const leading = weekdayIndex(days[0]);
   const totalMinutes = days.reduce((sum, iso) => {
     for (const c of children) {
@@ -84,12 +90,12 @@ export function Month() {
   return (
     <>
       <div className="date-nav">
-        <button className="nav-btn" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
+        <button className="nav-btn" onClick={() => shiftMonthAnimated(-1)} aria-label="Previous month">‹</button>
         <div className="date-label"><strong>{monthLabel(viewDate)}</strong></div>
-        <button className="nav-btn" onClick={() => shiftMonth(1)} aria-label="Next month">›</button>
+        <button className="nav-btn" onClick={() => shiftMonthAnimated(1)} aria-label="Next month">›</button>
       </div>
 
-      <div className="month-grid" {...swipe}>
+      <div className={`month-grid ${slide}`} {...swipe}>
         {WEEKDAY_LABELS.map((w) => (
           <span key={w} className="month-head">{w[0]}</span>
         ))}

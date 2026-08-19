@@ -690,3 +690,39 @@ button.child-card { padding: 12px 14px; }
   border: 1px solid var(--mist); border-radius: 10px; padding: 10px 12px;
   width: 100%; min-height: 44px;
 }
+
+/* ---- Swipeable invoice pager ---- */
+.pager { overflow: hidden; touch-action: pan-y; }
+.pager-page { will-change: transform; }
+.pager-page.gliding {
+  transition: transform 0.19s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.19s ease;
+}
+.pager-dots { display: flex; justify-content: center; gap: 6px; margin-top: 2px; }
+.pager-dots i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--mist); transition: background 0.18s ease, transform 0.18s ease;
+}
+.pager-dots i.on { background: var(--marigold); transform: scale(1.25); }
+@media (prefers-reduced-motion: reduce) {
+  .pager-page.gliding { transition: none; }
+  .pager-dots i { transition: none; }
+}
+
+/* The date label's title and sub-line need to stack, not run together. */
+.date-label strong { display: block; }
+.date-label .hint { display: block; font-size: 12px; }
+
+/* Month grid paging animation */
+.month-grid { touch-action: pan-y; }
+@media (prefers-reduced-motion: no-preference) {
+  .month-grid.in-right { animation: grid-in-right 0.24s cubic-bezier(0.32, 0.72, 0, 1); }
+  .month-grid.in-left { animation: grid-in-left 0.24s cubic-bezier(0.32, 0.72, 0, 1); }
+  @keyframes grid-in-right {
+    from { transform: translate3d(28%, 0, 0); opacity: 0.35; }
+    to { transform: none; opacity: 1; }
+  }
+  @keyframes grid-in-left {
+    from { transform: translate3d(-28%, 0, 0); opacity: 0.35; }
+    to { transform: none; opacity: 1; }
+  }
+}
