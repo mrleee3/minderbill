@@ -34,35 +34,27 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
     }, {})
   ).sort((a, b) => b.period.localeCompare(a.period));
 
-  // Drag-to-page: the invoice follows the finger, then either settles back
-  // or slides out and the neighbour slides in from the opposite edge.
+  // Carousel: every invoice sits side by side in one track. Dragging moves
+  // the whole track, so the neighbouring invoice is already visible next to
+  // the current one as you pull — no swap-and-bounce.
   const [dragX, setDragX] = useState(0);
-  const [gliding, setGliding] = useState(false);
+  const [animating, setAnimating] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
   const startRef = useRef<{ x: number; y: number; locked: boolean | null } | null>(null);
 
-  const go = (delta: number) => {
-    const next = index + delta;
-    if (next < 0 || next > latest.length - 1) return;
-    const width = window.innerWidth;
-    setGliding(true);
-    setDragX(delta > 0 ? -width : width); // slide the current page out
-    window.setTimeout(() => {
-      setGliding(false);
-      setIndex(next);
-      setDragX(delta > 0 ? width : -width); // place the new page off-screen
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setGliding(true);
-          setDragX(0); // and bring it in
-        });
-      });
-    }, 190);
+  const width = () => trackRef.current?.clientWidth ?? window.innerWidth;
+
+  const go = (target: number) => {
+    const next = Math.max(0, Math.min(target, latest.length - 1));
+    setAnimating(true);
+    setDragX(0);
+    setIndex(next);
   };
 
   const onTouchStart = (e: TouchEvent) => {
     const t = e.touches[0];
     startRef.current = { x: t.clientX, y: t.clientY, locked: null };
-    setGliding(false);
+    setAnimating(false);
   };
 
   const onTouchMove = (e: TouchEvent) => {
@@ -73,28 +65,26 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
     const dy = t.clientY - st.y;
     if (st.locked === null) {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      st.locked = Math.abs(dx) > Math.abs(dy) * 1.2; // horizontal?
+      st.locked = Math.abs(dx) > Math.abs(dy) * 1.2;
     }
     if (!st.locked) return;
-    // Resist dragging past the first or last invoice.
+    // Resist pulling past the first or last invoice.
     const atEnd = (dx < 0 && index >= latest.length - 1) || (dx > 0 && index <= 0);
-    setDragX(atEnd ? dx * 0.25 : dx);
+    setDragX(atEnd ? dx * 0.28 : dx);
   };
 
   const onTouchEnd = () => {
     const st = startRef.current;
     startRef.current = null;
+    setAnimating(true);
     if (!st?.locked) {
       setDragX(0);
       return;
     }
-    const threshold = Math.min(90, window.innerWidth * 0.22);
-    if (dragX <= -threshold) go(1);
-    else if (dragX >= threshold) go(-1);
-    else {
-      setGliding(true);
-      setDragX(0);
-    }
+    const threshold = Math.min(80, width() * 0.2);
+    if (dragX <= -threshold) go(index + 1);
+    else if (dragX >= threshold) go(index - 1);
+    else setDragX(0);
   };
 
   if (latest.length === 0) {
@@ -114,7 +104,7 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
       <div className="date-nav">
         <button
           className="nav-btn"
-          onClick={() => go(1)}
+          onClick={() => go(index + 1)}
           disabled={index >= latest.length - 1}
           aria-label="Older invoice"
         >
@@ -129,7 +119,7 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
         </div>
         <button
           className="nav-btn"
-          onClick={() => go(-1)}
+          onClick={() => go(index - 1)}
           disabled={index === 0}
           aria-label="Newer invoice"
         >
@@ -146,7 +136,7 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
         <select
           className="period-picker"
           value={inv.period}
-          onChange={(e) => go(latest.findIndex((x) => x.period === e.target.value) - index)}
+          onChange={(e) => go(latest.findIndex((x) => x.period === e.target.value))}
         >
           {latest.map((i) => (
             <option key={i.period} value={i.period}>
@@ -157,30 +147,37 @@ export function InvoiceHistory({ child }: { child: ChildContract }) {
       )}
 
       <div
-        className="pager"
+        className="carousel"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         <div
-          className={`pager-page${gliding ? " gliding" : ""}`}
-          style={{
-            transform: `translate3d(${dragX}px,0,0)`,
-            opacity: 1 - Math.min(Math.abs(dragX) / (window.innerWidth * 0.9), 0.45),
-          }}
+          ref={trackRef}
+          className={`carousel-track${animating ? " animating" : ""}`}
+          style={{ transform: `translate3d(calc(${-index * 100}% + ${dragX}px), 0, 0)` }}
+          onTransitionEnd={() => setAnimating(false)}
         >
-          {business && (
-            <A4Preview
-              html={renderPrintHTML(
-                child,
-                inv.period,
-                inv.lines as DetailedLine[],
-                inv.totalPence,
-                business,
-                inv.version
+          {latest.map((item, i) => (
+            <div className="carousel-slide" key={`${item.period}-v${item.version}`}>
+              {/* Only the current invoice and its immediate neighbours are
+                  rendered; the rest are spacers until they come into range. */}
+              {business && Math.abs(i - index) <= 1 ? (
+                <A4Preview
+                  html={renderPrintHTML(
+                    child,
+                    item.period,
+                    item.lines as DetailedLine[],
+                    item.totalPence,
+                    business,
+                    item.version
+                  )}
+                />
+              ) : (
+                <div className="a4-frame placeholder" />
               )}
-            />
-          )}
+            </div>
+          ))}
         </div>
       </div>
       {latest.length > 1 && (

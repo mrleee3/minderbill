@@ -691,12 +691,23 @@ button.child-card { padding: 12px 14px; }
   width: 100%; min-height: 44px;
 }
 
-/* ---- Swipeable invoice pager ---- */
-.pager { overflow: hidden; touch-action: pan-y; }
-.pager-page { will-change: transform; }
-.pager-page.gliding {
-  transition: transform 0.19s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.19s ease;
+/* ---- Invoice carousel ----
+   All invoices sit side by side in one track; dragging translates the track
+   so the neighbour is genuinely alongside the current page while you pull. */
+.carousel { overflow: hidden; touch-action: pan-y; margin: 0 -4px; }
+.carousel-track {
+  display: flex;
+  will-change: transform;
 }
+.carousel-track.animating {
+  transition: transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.carousel-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  padding: 0 4px;
+}
+.a4-frame.placeholder { background: var(--card); }
 .pager-dots { display: flex; justify-content: center; gap: 6px; margin-top: 2px; }
 .pager-dots i {
   width: 6px; height: 6px; border-radius: 50%;
