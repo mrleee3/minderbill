@@ -44,8 +44,7 @@ body {
 
 #root {
   position: relative;
-  height: 100dvh; /* fallback until JS measures */
-  height: var(--app-h, 100dvh);
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -104,11 +103,10 @@ body {
 
 /* ---- Tab bar ---- */
 .tabbar {
-  /* Absolute inside the measured #root rather than fixed to the viewport:
-     iOS sometimes reports a stale viewport after an in-app reload, which
-     left the bar floating. Sizing from our own measurement removes that
-     dependency, and re-measuring on load/foreground corrects it. */
-  position: absolute;
+  /* Fixed to the viewport: measured heights (dvh and innerHeight) both come
+     back too small in this PWA, but the fixed-position viewport is correct.
+     A reflow kick after load handles the stale-viewport case (see main.tsx). */
+  position: fixed;
   left: 0;
   right: 0;
   bottom: 0;

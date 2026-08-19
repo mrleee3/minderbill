@@ -1,44 +1,32 @@
 import React from "react";
-
-// iOS standalone PWAs report inconsistent 100dvh depending on OS version and
-// root overflow settings. window.innerHeight is ground truth for the visible
-// area, so the app column is sized from that. Updated on orientation change
-// and pageshow, deliberately NOT on every resize so the layout doesn't chase
-// the keyboard.
-let lastH = 0;
-function setAppHeight() {
-  const h = window.innerHeight;
-  if (h === lastH) return;
-  lastH = h;
-  document.documentElement.style.setProperty("--app-h", `${h}px`);
-}
-setAppHeight();
-window.addEventListener("orientationchange", () => setTimeout(setAppHeight, 250));
-window.addEventListener("pageshow", setAppHeight);
-window.addEventListener("load", () => {
-  setAppHeight();
-  // After an in-app reload iOS can report the previous viewport for a
-  // moment, so keep checking briefly rather than trusting the first read.
-  const started = Date.now();
-  const settle = () => {
-    setAppHeight();
-    if (Date.now() - started < 2500) requestAnimationFrame(settle);
-  };
-  requestAnimationFrame(settle);
-});
-// Returning to the app is the other moment the viewport can have changed.
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") setAppHeight();
-});
-window.addEventListener("focus", setAppHeight);
-visualViewport?.addEventListener("resize", () => {
-  // Ignore keyboard-driven shrinks; only track real viewport changes.
-  if ((visualViewport?.height ?? 0) > window.innerHeight * 0.75) setAppHeight();
-});
-
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles.css";
+
+// After an in-app reload iOS can lay out position:fixed elements against
+// the previous viewport, which leaves the tab bar floating above the bottom
+// until the app is force-quit. Toggling the element out of and back into the
+// layout forces a fresh computation against the current viewport.
+function kickTabBar() {
+  const bar = document.querySelector<HTMLElement>(".tabbar");
+  // Skip while a sheet is open: the bar is deliberately slid away then.
+  if (!bar || document.body.classList.contains("sheet-open")) return;
+  bar.style.display = "none";
+  void bar.offsetHeight; // force reflow while it is out of flow
+  bar.style.display = "";
+}
+
+function scheduleKicks() {
+  requestAnimationFrame(kickTabBar);
+  for (const delay of [80, 300, 800, 1600]) setTimeout(kickTabBar, delay);
+}
+
+window.addEventListener("load", scheduleKicks);
+window.addEventListener("pageshow", scheduleKicks);
+window.addEventListener("orientationchange", () => setTimeout(scheduleKicks, 250));
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") scheduleKicks();
+});
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
