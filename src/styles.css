@@ -104,9 +104,8 @@ body {
 
 /* ---- Tab bar ---- */
 .tabbar {
-  /* `bottom: 0` is only the pre-JS fallback. useVisualViewportBar() anchors
-     the bar by `top` from visualViewport, because layout-viewport-derived
-     bottom anchoring is exactly what goes stale after an in-app reload. */
+  /* Identical to H@H's .nav: plain fixed bottom-anchoring in a normally
+     scrolling document. No JS positioning, no measured heights. */
   position: fixed;
   left: 0;
   right: 0;
