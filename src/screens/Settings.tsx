@@ -21,6 +21,7 @@ import {
 import { getClosures, setClosures as saveClosures } from "../lib/settings";
 import { Collapsible } from "../components/Collapsible";
 import { fmtDateLong } from "../lib/dates";
+import { debugEnabled, setDebugEnabled } from "../components/DebugPanel";
 import { addDemoChildren, removeDemoData } from "../lib/demo";
 import { todayISO } from "../lib/dates";
 import { academicYearOf } from "../lib/terms";
@@ -303,6 +304,23 @@ export function Settings() {
           hidden
           onChange={(e) => e.target.files?.[0] && importBackup(e.target.files[0])}
         />
+      </label>
+
+      <div className="form-section">Diagnostics</div>
+      <p className="hint">
+        Temporary — shows live layout measurements over the app so we can pin down the tab bar
+        issue. Turn it on, then reload with the update banner and screenshot the panel.
+      </p>
+      <label className="check-row">
+        <input
+          type="checkbox"
+          defaultChecked={debugEnabled()}
+          onChange={(e) => {
+            setDebugEnabled(e.target.checked);
+            location.reload();
+          }}
+        />
+        <span>Show layout diagnostics</span>
       </label>
 
       <div className="form-section">Demo data</div>

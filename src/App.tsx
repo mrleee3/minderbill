@@ -1,5 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
+import { DebugPanel, debugEnabled } from "./components/DebugPanel";
 import {
   IconChildren,
   IconInvoices,
@@ -82,6 +83,7 @@ export default function App() {
   return (
     <>
       <UpdateBanner />
+      {debugEnabled() && <DebugPanel />}
       <header className="app-header">
         <h1 className="app-title">
           Minder<span className="bill">Bill</span>

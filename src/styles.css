@@ -855,3 +855,20 @@ button.child-card { padding: 12px 14px; }
 }
 
 /* --stagger is set inline on the card and inherits down to the chip. */
+
+/* ---- Temporary layout diagnostics ---- */
+.debug-panel {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 10095;
+  background: rgba(30, 42, 50, 0.93); color: #fff;
+  font: 10px/1.45 ui-monospace, Menlo, monospace;
+  padding: calc(env(safe-area-inset-top, 0px) + 4px) 8px 6px;
+}
+.debug-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.debug-row button {
+  margin-left: auto; background: #fff; color: #1e2a32; border: 0;
+  border-radius: 5px; padding: 2px 8px; font: inherit; font-weight: 700;
+}
+.debug-row button + button { margin-left: 4px; }
+.debug-gap { font-size: 13px; font-weight: 700; color: #7fd7a0; padding: 2px 0; }
+.debug-gap.bad { color: #ff8f85; }
+.debug-trail { display: flex; flex-direction: column; opacity: 0.75; margin-top: 3px; }
