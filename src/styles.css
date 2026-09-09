@@ -104,8 +104,8 @@ body {
 
 /* ---- Tab bar ---- */
 .tabbar {
-  /* Identical to H@H's .nav: plain fixed bottom-anchoring in a normally
-     scrolling document. No JS positioning, no measured heights. */
+  /* Browser tabs use the normal fixed bottom edge. Standalone apps below
+     use the dynamic viewport to avoid iOS retaining a stale bottom inset. */
   position: fixed;
   left: 0;
   right: 0;
@@ -118,6 +118,19 @@ body {
   background: var(--paper);
   padding: 3px 8px calc(3px + env(safe-area-inset-bottom, 0px));
   transition: transform 0.18s ease, opacity 0.18s ease;
+}
+/* In an installed app, iOS can retain a shorter fixed-position containing
+   block after launch/reload. Anchor from the top using the dynamic viewport
+   instead of bottom: 0. Keep the real home-indicator safe area as padding.
+   Individual translate composes with the sheet-open transform below. */
+@media (display-mode: standalone) {
+  @supports (height: 100dvh) and (translate: 0 -100%) {
+    .tabbar {
+      top: 100dvh;
+      bottom: auto;
+      translate: 0 -100%;
+    }
+  }
 }
 /* While a sheet is open the bar slides away entirely, so it can never
    overlap sheet controls (the pattern used by the H@H app). */
