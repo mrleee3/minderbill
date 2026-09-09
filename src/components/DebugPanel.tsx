@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isHomeScreen } from "../lib/viewport";
 
 /**
  * Temporary diagnostics for the floating tab bar. Persisted in localStorage
@@ -6,7 +7,7 @@ import { useEffect, useState } from "react";
  * panel has to be on screen at that moment.
  *
  * The decisive number is `gap`: the distance between the bottom of the tab
- * bar and what the browser claims is the bottom of the viewport.
+ * bar and its target edge (the corrected edge when the workaround is active).
  *   gap ≈ 0 but a visible gap on screen  → the viewport height is under-reported
  *   gap > 0                              → the bar is genuinely mispositioned
  */
@@ -37,6 +38,8 @@ interface Sample {
   vvTop: number;
   vvScale: number;
   sab: number;
+  correctedBottom: string;
+  appleStandalone: boolean;
   barTop: number;
   barBottom: number;
   gap: number;
@@ -66,9 +69,11 @@ function sample(): Sample | null {
     vvTop: Math.round(vv?.offsetTop ?? 0),
     vvScale: Number((vv?.scale ?? 1).toFixed(2)),
     sab: Math.round(sab),
+    correctedBottom: document.documentElement.style.getPropertyValue("--tab-viewport-bottom") || "off",
+    appleStandalone: (navigator as Navigator & { standalone?: boolean }).standalone === true,
     barTop: Math.round(r.top),
     barBottom: Math.round(r.bottom),
-    gap: Math.round(window.innerHeight - r.bottom),
+    gap: Math.round((parseFloat(document.documentElement.style.getPropertyValue("--tab-viewport-bottom")) || window.innerHeight) - r.bottom),
     scrollY: Math.round(window.scrollY),
     docH: Math.round(document.documentElement.scrollHeight),
   };
@@ -97,7 +102,7 @@ export function DebugPanel() {
 
   if (!live) return null;
 
-  const mode = window.matchMedia("(display-mode: standalone)").matches
+  const mode = isHomeScreen(window.matchMedia("(display-mode: standalone)").matches, live.appleStandalone)
     ? "standalone"
     : "browser";
 
@@ -124,7 +129,7 @@ export function DebugPanel() {
         GAP {live.gap}px · bar {live.barTop}–{live.barBottom}
       </div>
       <div className="debug-row">
-        ih {live.ih} · ch {live.ch} · sh {live.sh}
+        ih {live.ih} · ch {live.ch} · sh {live.sh} · fix {live.correctedBottom}
       </div>
       <div className="debug-row">
         vv {live.vvH} @{live.vvTop} ×{live.vvScale} · scrollY {live.scrollY} · doc {live.docH}
