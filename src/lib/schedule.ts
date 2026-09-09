@@ -95,3 +95,11 @@ export function scheduleSummary(child: ChildContract, onISO: string): string {
   const h = weekMinutes / 60;
   return `${dayText} · ${Number.isInteger(h) ? h : h.toFixed(1)} h/wk`;
 }
+
+/** Keep exceptions that differ from the effective schedule, including closures. */
+export function needsDayLog(child: ChildContract, entry: DayLog, closures: Closure[] = []): boolean {
+  const planned = resolveDay(child, entry.date, undefined, closures);
+  return !planned || entry.startMin !== planned.startMin ||
+    entry.endMin !== planned.endMin || entry.absence !== planned.absence ||
+    !!entry.note?.trim();
+}

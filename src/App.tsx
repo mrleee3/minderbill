@@ -16,7 +16,6 @@ import { Settings } from "./screens/Settings";
 import { todayISO, fmtDateLong } from "./lib/dates";
 import { findUnconfirmed } from "./lib/confirm";
 import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "./db";
 
 type Tab = "today" | "month" | "invoices" | "children" | "settings";
 
@@ -55,18 +54,8 @@ function Screen({
 export default function App() {
   const [tab, setTab] = useState<Tab>("today");
   const [date, setDate] = useState(todayISO());
-  const [pending, setPending] = useState<string[]>([]);
+  const pending = useLiveQuery(() => findUnconfirmed(), []) ?? [];
   const [dismissed, setDismissed] = useState(false);
-
-  // Recheck whenever logs or confirmations change, so the nudge clears the
-  // moment she confirms.
-  const stamp = useLiveQuery(
-    async () => `${await db.confirms.count()}-${await db.dayLogs.count()}-${await db.children.count()}`,
-    []
-  );
-  useEffect(() => {
-    findUnconfirmed().then(setPending);
-  }, [stamp]);
 
   // Body is the scroller now — start each tab at the top.
   useEffect(() => {

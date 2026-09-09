@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { db, type AbsenceReason, type ChildContract, type DayLog } from "../db";
 import { inputToMin, minToInput } from "../lib/dates";
-import { plannedSlot, type ResolvedDay } from "../lib/schedule";
+import { plannedSlot, needsDayLog, type ResolvedDay } from "../lib/schedule";
+
+import type { Closure } from "../data/closures";
+import { policyFor } from "../engine/monthInvoice";
 
 export const ABSENCE_LABELS: Record<AbsenceReason, string> = {
   childSick: "Child sick",
@@ -19,12 +22,14 @@ export function DayEditor({
   resolved,
   log,
   onDone,
+  closures,
 }: {
   child: ChildContract;
   date: string;
   resolved: ResolvedDay | null;
   log: DayLog | undefined;
   onDone: () => void;
+  closures: Closure[];
 }) {
   const planned = plannedSlot(child, date);
   const init = resolved ?? { startMin: planned?.startMin ?? 480, endMin: planned?.endMin ?? 1050 };
@@ -46,11 +51,9 @@ export function DayEditor({
       note: note.trim() || undefined,
       confirmed: true,
     };
-    // If everything matches the plan and there's no absence/note, storing a
-    // log adds nothing — revert to the schedule instead (log by exception).
-    const matchesPlan =
-      planned && start === planned.startMin && end === planned.endMin && !absence && !note.trim();
-    if (matchesPlan) {
+    // Compare with the effective plan, including closures. Attendance on a
+    // closure day must remain an explicit exception even at the usual hours.
+    if (!needsDayLog(child, entry, closures)) {
       if (log?.id) await db.dayLogs.delete(log.id);
     } else {
       await db.dayLogs.put(entry);
@@ -96,14 +99,12 @@ export function DayEditor({
       {absence && (
         <p className="hint">
           Charged per this child's "{ABSENCE_LABELS[absence]}" policy —{" "}
-          {child.policies[absence as keyof ChildContract["policies"]] === "full"
+          {policyFor(child, absence) === "full"
             ? "full rate"
-            : child.policies[absence as keyof ChildContract["policies"]] === "half"
+            : policyFor(child, absence) === "half"
               ? "half rate"
-              : child.policies[absence as keyof ChildContract["policies"]] === "none"
-                ? "no charge"
-                : "no charge"}{" "}
-          on the planned hours.
+              : "no charge"}{" "}
+          on the hours shown above.
         </p>
       )}
 

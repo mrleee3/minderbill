@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChildContract, DayLog } from "../db";
-import { effectiveRatePence, plannedSlot, resolveDay, scheduleOn, scheduleSummary } from "./schedule";
+import { needsDayLog, effectiveRatePence, plannedSlot, resolveDay, scheduleOn, scheduleSummary } from "./schedule";
 
 const child: ChildContract = {
   id: 1,
@@ -165,5 +165,27 @@ describe("closures", () => {
     const r = resolveDay(child, "2026-08-17", log, closures)!;
     expect(r.absence).toBeUndefined();
     expect(r.source).toBe("log");
+  });
+});
+
+describe("saving attendance exceptions", () => {
+  const closures = [{ id: "h1", kind: "minderHoliday" as const, start: "2026-08-17", end: "2026-08-21", label: "Holiday" }];
+  const entry: DayLog = { childId: 1, date: "2026-08-17", startMin: 480, endMin: 1050, confirmed: true };
+
+  it("preserves attendance at normal hours on a closure day after saving and reopening", () => {
+    const saved = needsDayLog(child, entry, closures) ? entry : undefined;
+    expect(resolveDay(child, entry.date, saved, closures)?.absence).toBeUndefined();
+    expect(needsDayLog(child, saved!, closures)).toBe(true);
+  });
+
+  it("does not store an unchanged ordinary day or unchanged closure", () => {
+    expect(needsDayLog(child, entry)).toBe(false);
+    expect(needsDayLog(child, { ...entry, absence: "minderHoliday" }, closures)).toBe(false);
+  });
+
+  it("preserves adjusted hours, notes and unplanned attendance", () => {
+    expect(needsDayLog(child, { ...entry, endMin: 1110 })).toBe(true);
+    expect(needsDayLog(child, { ...entry, note: "Collected by grandad" })).toBe(true);
+    expect(needsDayLog(child, { ...entry, date: "2026-08-20" })).toBe(true);
   });
 });

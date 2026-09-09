@@ -101,6 +101,7 @@ export function ChildMonthHistory({
       >
         {editing && (
           <DayEditor
+            closures={closures}
             child={child}
             date={editing}
             resolved={resolveDay(child, editing, logs.find((l) => l.date === editing), closures)}

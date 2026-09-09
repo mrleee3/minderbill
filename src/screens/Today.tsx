@@ -202,6 +202,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
       >
         {editing && (
           <DayEditor
+            closures={closures}
             child={editing}
             date={date}
             resolved={resolveDay(editing, date, logFor(editing), closures)}
