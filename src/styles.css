@@ -104,7 +104,7 @@ body {
 
 /* ---- Tab bar ---- */
 .tabbar {
-  /* Default anchoring; the measured iPhone correction below is opt-in. */
+  /* Stay within the drawable viewport; iOS owns the outer system insets. */
   position: fixed;
   left: 0;
   right: 0;
@@ -117,13 +117,6 @@ body {
   background: var(--paper);
   padding: 3px 8px calc(3px + env(safe-area-inset-bottom, 0px));
   transition: transform 0.18s ease, opacity 0.18s ease;
-}
-/* The iPhone workaround is enabled only for a measured missing system
-   inset in Home Screen mode. Translate composes with the sheet animation. */
-html[data-viewport-corrected] .tabbar {
-  top: var(--tab-viewport-bottom);
-  bottom: auto;
-  translate: 0 -100%;
 }
 /* While a sheet is open the bar slides away entirely, so it can never
    overlap sheet controls (the pattern used by the H@H app). */

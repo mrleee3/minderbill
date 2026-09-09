@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { DebugPanel, debugEnabled } from "./components/DebugPanel";
 import {
@@ -16,8 +16,6 @@ import { Settings } from "./screens/Settings";
 import { todayISO, fmtDateLong } from "./lib/dates";
 import { findUnconfirmed } from "./lib/confirm";
 import { useLiveQuery } from "dexie-react-hooks";
-
-import { installViewportCorrection } from "./lib/viewport";
 
 type Tab = "today" | "month" | "invoices" | "children" | "settings";
 
@@ -54,7 +52,6 @@ function Screen({
 }
 
 export default function App() {
-  useLayoutEffect(installViewportCorrection, []);
   const [tab, setTab] = useState<Tab>("today");
   const [date, setDate] = useState(todayISO());
   const pending = useLiveQuery(() => findUnconfirmed(), []) ?? [];

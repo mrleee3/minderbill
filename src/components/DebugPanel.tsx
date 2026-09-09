@@ -7,7 +7,7 @@ import { isHomeScreen } from "../lib/viewport";
  * panel has to be on screen at that moment.
  *
  * The decisive number is `gap`: the distance between the bottom of the tab
- * bar and its target edge (the corrected edge when the workaround is active).
+ * bar and the bottom of the viewport.
  *   gap ≈ 0 but a visible gap on screen  → the viewport height is under-reported
  *   gap > 0                              → the bar is genuinely mispositioned
  */
@@ -38,7 +38,9 @@ interface Sample {
   vvTop: number;
   vvScale: number;
   sab: number;
-  correctedBottom: string;
+  viewportMeta: string;
+  statusBarStyle: string;
+  paddingBottom: number;
   appleStandalone: boolean;
   barTop: number;
   barBottom: number;
@@ -69,11 +71,13 @@ function sample(): Sample | null {
     vvTop: Math.round(vv?.offsetTop ?? 0),
     vvScale: Number((vv?.scale ?? 1).toFixed(2)),
     sab: Math.round(sab),
-    correctedBottom: document.documentElement.style.getPropertyValue("--tab-viewport-bottom") || "off",
+    viewportMeta: document.querySelector('meta[name="viewport"]')?.getAttribute("content") ?? "",
+    statusBarStyle: document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.getAttribute("content") ?? "",
+    paddingBottom: Math.round(parseFloat(getComputedStyle(bar).paddingBottom)),
     appleStandalone: (navigator as Navigator & { standalone?: boolean }).standalone === true,
     barTop: Math.round(r.top),
     barBottom: Math.round(r.bottom),
-    gap: Math.round((parseFloat(document.documentElement.style.getPropertyValue("--tab-viewport-bottom")) || window.innerHeight) - r.bottom),
+    gap: Math.round(window.innerHeight - r.bottom),
     scrollY: Math.round(window.scrollY),
     docH: Math.round(document.documentElement.scrollHeight),
   };
@@ -129,11 +133,12 @@ export function DebugPanel() {
         GAP {live.gap}px · bar {live.barTop}–{live.barBottom}
       </div>
       <div className="debug-row">
-        ih {live.ih} · ch {live.ch} · sh {live.sh} · fix {live.correctedBottom}
+        ih {live.ih} · ch {live.ch} · sh {live.sh} · pad {live.paddingBottom}
       </div>
       <div className="debug-row">
         vv {live.vvH} @{live.vvTop} ×{live.vvScale} · scrollY {live.scrollY} · doc {live.docH}
       </div>
+      <div className="debug-row">Status: {live.statusBarStyle} · {live.viewportMeta}</div>
       <div className="debug-trail">
         {trail.map((s) => (
           <span key={s.t}>
