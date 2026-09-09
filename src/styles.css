@@ -883,10 +883,19 @@ button.child-card { padding: 12px 14px; }
 }
 .form textarea { resize: vertical; }
 .care-shortcuts { margin: 8px 0; }
-.care-shortcuts .chip { min-height: 44px; }
 .care-entries { display: grid; gap: 10px; margin: 12px 0; }
 .care-entry { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--mist); border-radius: 12px; background: var(--card); }
 .care-entry-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .care-entry-head strong { flex: 1; min-width: 0; font-size: 14px; }
 .care-entry-head input[type="time"] { flex: 0 0 110px; width: 110px; padding: 8px 4px; }
 .care-remove { flex: 0 0 44px; min-height: 44px; border: 0; border-radius: 8px; background: var(--paper); color: var(--clay); cursor: pointer; }
+
+.child-diary { padding-top: 8px; }
+.diary-day { border: 1px solid var(--mist); border-radius: 12px; padding: 12px 14px; margin-top: 14px; background: var(--card); }
+.diary-day h3 { margin: 0 0 10px; font-family: var(--display); font-size: 16px; }
+.diary-entry { display: flex; gap: 12px; padding: 7px 0; border-top: 1px solid var(--mist); font-size: 14px; }
+.diary-entry time { flex: 0 0 42px; color: var(--ink-60); font-variant-numeric: tabular-nums; }
+.diary-entry span { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.diary-note { margin: 10px 0 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.diary-note strong { display: block; margin-bottom: 3px; }
+.child-card > .card-action { padding: 0 11px; min-width: 44px; justify-content: center; }

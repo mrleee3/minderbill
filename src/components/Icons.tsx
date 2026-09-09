@@ -72,3 +72,7 @@ export function IconSettings({ active }: IconProps) {
     </svg>
   );
 }
+
+export function IconDiary() {
+  return <svg {...S} aria-hidden="true"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Z"/><path d="M12 5v15M6 8h3M6 11h3M15 8h3M15 11h3"/></svg>;
+}

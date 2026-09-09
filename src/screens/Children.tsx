@@ -10,13 +10,15 @@ import { InvoiceHistory } from "../components/InvoiceHistory";
 import { Collapsible } from "../components/Collapsible";
 import { childColour } from "../lib/settings";
 import { addDemoChildren } from "../lib/demo";
-import { IconInvoices } from "../components/Icons";
+import { ChildDiary } from "../components/ChildDiary";
+import { IconDiary, IconInvoices } from "../components/Icons";
 
 type SheetState =
   | { mode: "closed" }
   | { mode: "new" }
   | { mode: "edit"; child: ChildContract }
-  | { mode: "invoices"; child: ChildContract };
+  | { mode: "invoices"; child: ChildContract }
+  | { mode: "diary"; child: ChildContract };
 
 export function Children() {
   const childrenQ = useLiveQuery(() => db.children.toArray(), []);
@@ -27,7 +29,7 @@ export function Children() {
 
   // Keep the open sheet in step with live edits (e.g. after saving).
   useEffect(() => {
-    if (sheet.mode !== "edit" && sheet.mode !== "invoices") return;
+    if (sheet.mode !== "edit" && sheet.mode !== "invoices" && sheet.mode !== "diary") return;
     const fresh = children.find((c) => c.id === sheet.child.id);
     if (fresh && fresh !== sheet.child) setSheet({ ...sheet, child: fresh });
   }, [children]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -56,6 +58,9 @@ export function Children() {
             <span className="card-note">Left {c.endDate}</span>
           )}
         </span>
+      </button>
+      <button className="card-action" aria-label={`Diary for ${c.name}`} title="Diary" onClick={() => setSheet({ mode: "diary", child: c })}>
+        <IconDiary />
       </button>
       <button
         className="card-action"
@@ -105,6 +110,8 @@ export function Children() {
         title={
           sheet.mode === "new"
             ? "Add child"
+            : sheet.mode === "diary"
+              ? `${sheet.child.name} — diary`
             : sheet.mode === "invoices"
               ? `${sheet.child.name} — invoices`
               : sheet.mode === "edit"
@@ -120,6 +127,7 @@ export function Children() {
           <ChildForm existing={sheet.child} onDone={() => setSheet({ mode: "closed" })} />
         )}
         {sheet.mode === "invoices" && <InvoiceHistory child={sheet.child} />}
+        {sheet.mode === "diary" && <ChildDiary key={sheet.child.id} child={sheet.child} />}
       </Sheet>
     </>
   );
