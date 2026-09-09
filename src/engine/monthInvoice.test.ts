@@ -177,3 +177,13 @@ describe("closures in invoices", () => {
     expect(week.days[0].chargeMinutes).toBe(570); // full charge
   });
 });
+
+it("daily care notes do not change childcare charges or funded minutes", () => {
+  const logs: DayLog[] = [{ childId: 1, date: "2026-09-01", startMin: 480, endMin: 1050, confirmed: true,
+    careEntries: [
+      { id: "care1", kind: "toileting", label: "Wet nappy", time: "10:30" },
+      { id: "care2", kind: "food", label: "Lunch", time: "12:00", eaten: "most", details: "Pasta" },
+      { id: "care3", kind: "drink", label: "Water", time: "12:15", amountMl: 100 },
+    ] }];
+  expect(buildMonthInvoice(child, "2026-09", logs, terms)).toEqual(buildMonthInvoice(child, "2026-09", [], terms));
+});

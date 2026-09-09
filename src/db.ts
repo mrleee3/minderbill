@@ -57,6 +57,16 @@ export type AbsenceReason =
   | "closed"
   | "other";
 
+export interface CareEntry {
+  id: string;
+  kind: "toileting" | "food" | "drink";
+  label: string;
+  time: string; // Local HH:mm within the DayLog's date
+  details?: string;
+  eaten?: "all" | "most" | "some" | "none";
+  amountMl?: number;
+}
+
 export interface DayLog {
   id?: number;
   childId: number;
@@ -65,6 +75,7 @@ export interface DayLog {
   endMin: number;
   absence?: AbsenceReason;
   note?: string;
+  careEntries?: CareEntry[];
   confirmed: boolean;
 }
 

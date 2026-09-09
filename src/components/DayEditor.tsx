@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { db, type AbsenceReason, type ChildContract, type DayLog } from "../db";
+import { db, type AbsenceReason, type CareEntry, type ChildContract, type DayLog } from "../db";
 import { inputToMin, minToInput } from "../lib/dates";
 import { plannedSlot, needsDayLog, type ResolvedDay } from "../lib/schedule";
 
 import type { Closure } from "../data/closures";
+import { CareNotes } from "./CareNotes";
+import { resolveDay } from "../lib/schedule";
 import { policyFor } from "../engine/monthInvoice";
 
 export const ABSENCE_LABELS: Record<AbsenceReason, string> = {
@@ -38,43 +40,59 @@ export function DayEditor({
   const [absence, setAbsence] = useState<AbsenceReason | undefined>(resolved?.absence);
   const [note, setNote] = useState(resolved?.note ?? "");
 
-  const valid = end > start;
+  const [careEntries, setCareEntries] = useState<CareEntry[]>(log?.careEntries ?? []);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const valid = end > start && careEntries.every(entry => /^([01]\d|2[0-3]):[0-5]\d$/.test(entry.time));
 
   async function save() {
-    const entry: DayLog = {
-      ...(log ?? {}),
-      childId: child.id!,
-      date,
-      startMin: start,
-      endMin: end,
-      absence,
-      note: note.trim() || undefined,
-      confirmed: true,
-    };
-    // Compare with the effective plan, including closures. Attendance on a
-    // closure day must remain an explicit exception even at the usual hours.
-    if (!needsDayLog(child, entry, closures)) {
-      if (log?.id) await db.dayLogs.delete(log.id);
-    } else {
-      await db.dayLogs.put(entry);
+    if (!valid || saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      const entry: DayLog = {
+        ...(log ?? {}),
+        childId: child.id!,
+        date,
+        startMin: start,
+        endMin: end,
+        absence,
+        note: note.trim() || undefined,
+        careEntries: careEntries.length ? careEntries : undefined,
+        confirmed: true,
+      };
+      // Compare with the effective plan, including closures. Attendance on a
+      // closure day must remain an explicit exception even at the usual hours.
+      if (!needsDayLog(child, entry, closures)) {
+        if (log?.id) await db.dayLogs.delete(log.id);
+      } else {
+        await db.dayLogs.put(entry);
+      }
+      onDone();
+    } catch {
+      setError("Could not save. Please try again; your entries are still here.");
+    } finally {
+      setSaving(false);
     }
-    onDone();
   }
 
-  async function revert() {
-    if (log?.id) await db.dayLogs.delete(log.id);
-    onDone();
+  function revert() {
+    // Reset attendance only: care entries and free-text notes stay in the form.
+    const baseline = resolveDay(child, date, undefined, closures);
+    setStart(baseline?.startMin ?? 480);
+    setEnd(baseline?.endMin ?? 1050);
+    setAbsence(baseline?.absence);
   }
 
   return (
-    <div className="form">
+    <div className="form day-editor">
       <div className="form-section">Hours</div>
       <div className="time-row">
         <input type="time" value={minToInput(start)} onChange={(e) => setStart(inputToMin(e.target.value))} />
         <span className="dash">–</span>
         <input type="time" value={minToInput(end)} onChange={(e) => setEnd(inputToMin(e.target.value))} />
       </div>
-      {!valid && <p className="hint warn">End time must be after start time.</p>}
+      {!(end > start) && <p className="hint warn">End time must be after start time.</p>}
       {planned && (
         <p className="hint">
           Planned: {minToInput(planned.startMin)}–{minToInput(planned.endMin)}
@@ -108,17 +126,20 @@ export function DayEditor({
         </p>
       )}
 
+      <CareNotes entries={careEntries} onChange={setCareEntries} />
       <label className="field">
         <span>Note (optional)</span>
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. picked up by grandad" />
+        <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. picked up by grandad" />
       </label>
 
-      <button className="btn-primary" onClick={save} disabled={!valid}>
-        Save
+      {careEntries.some(entry => !/^([01]\d|2[0-3]):[0-5]\d$/.test(entry.time)) && <p className="hint warn">Enter a time for each care entry.</p>}
+      {error && <p className="hint warn" role="alert">{error}</p>}
+      <button className="btn-primary" onClick={save} disabled={!valid || saving}>
+        {saving ? "Saving…" : "Save"}
       </button>
       {log && (
-        <button className="btn-quiet" onClick={revert}>
-          Revert to planned
+        <button className="btn-quiet" onClick={revert} disabled={saving}>
+          Reset hours / absence to planned
         </button>
       )}
     </div>

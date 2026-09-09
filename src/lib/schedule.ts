@@ -1,4 +1,4 @@
-import type { AbsenceReason, ChildContract, DaySlot, DayLog } from "../db";
+import type { CareEntry, AbsenceReason, ChildContract, DaySlot, DayLog } from "../db";
 import { weekdayIndex } from "./dates";
 import { closureOn, type Closure } from "../data/closures";
 
@@ -12,6 +12,7 @@ export interface ResolvedDay {
   minutes: number;
   absence?: AbsenceReason;
   note?: string;
+  careEntries?: CareEntry[];
   /** "schedule" = virtual planned day; "log" = explicit stored exception. */
   source: "schedule" | "log";
   /** Set when the absence came from a declared closure rather than a log. */
@@ -54,6 +55,7 @@ export function resolveDay(
       minutes: Math.max(0, log.endMin - log.startMin),
       absence: log.absence,
       note: log.note,
+      careEntries: log.careEntries,
       source: "log",
     };
   }
@@ -101,5 +103,5 @@ export function needsDayLog(child: ChildContract, entry: DayLog, closures: Closu
   const planned = resolveDay(child, entry.date, undefined, closures);
   return !planned || entry.startMin !== planned.startMin ||
     entry.endMin !== planned.endMin || entry.absence !== planned.absence ||
-    !!entry.note?.trim();
+    !!entry.note?.trim() || !!entry.careEntries?.length;
 }

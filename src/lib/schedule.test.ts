@@ -189,3 +189,11 @@ describe("saving attendance exceptions", () => {
     expect(needsDayLog(child, { ...entry, date: "2026-08-20" })).toBe(true);
   });
 });
+
+it("retains a care-only day log when hours match the schedule", () => {
+  const entry: DayLog = { childId: 1, date: "2026-08-17", startMin: 480, endMin: 1050, confirmed: true,
+    careEntries: [{ id: "care1", kind: "toileting", label: "Wet nappy", time: "10:30" }] };
+  expect(needsDayLog(child, entry)).toBe(true);
+  expect(resolveDay(child, entry.date, entry)?.careEntries).toEqual(entry.careEntries);
+  expect(needsDayLog(child, { ...entry, careEntries: [] })).toBe(false);
+});

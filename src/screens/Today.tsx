@@ -112,6 +112,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
             {isConfirmed && resolved!.source === "log" && !resolved!.absence && (
               <span className="card-note">Adjusted from planned</span>
             )}
+            {!!resolved!.careEntries?.length && <span className="card-note">{resolved!.careEntries.length} care {resolved!.careEntries.length === 1 ? "entry" : "entries"}</span>}
             {resolved!.note && <span className="card-note">{resolved!.note}</span>}
           </span>
           <span

@@ -269,7 +269,7 @@ body.sheet-open .tabbar {
 }
 .sheet-body {
   overflow-y: auto; overflow-x: hidden; overscroll-behavior-x: none;
-  padding: 0 18px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  padding: 0 18px calc(var(--tab-safe-bottom) + 28px);
 }
 
 /* ---- Forms ---- */
@@ -800,7 +800,7 @@ button.child-card { padding: 12px 14px; }
 
 /* Tab badge */
 .tab-badge {
-  position: absolute; top: -2px; right: 6px;
+  position: absolute; top: -5px; right: 1px;
   min-width: 16px; height: 16px; padding: 0 4px;
   background: var(--clay); color: #fff;
   border-radius: 999px; font-size: 10px; font-weight: 700;
@@ -874,3 +874,19 @@ button.child-card { padding: 12px 14px; }
 .debug-gap { font-size: 13px; font-weight: 700; color: #7fd7a0; padding: 2px 0; }
 .debug-gap.bad { color: #ff8f85; }
 .debug-trail { display: flex; flex-direction: column; opacity: 0.75; margin-top: 3px; }
+
+/* Daily care quick entries */
+.form textarea, .care-entry select {
+  font: inherit; color: var(--ink); background: var(--card);
+  border: 1px solid var(--mist); border-radius: 10px; padding: 10px 12px;
+  width: 100%; min-width: 0; min-height: 44px;
+}
+.form textarea { resize: vertical; }
+.care-shortcuts { margin: 8px 0; }
+.care-shortcuts .chip { min-height: 44px; }
+.care-entries { display: grid; gap: 10px; margin: 12px 0; }
+.care-entry { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--mist); border-radius: 12px; background: var(--card); }
+.care-entry-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.care-entry-head strong { flex: 1; min-width: 0; font-size: 14px; }
+.care-entry-head input[type="time"] { flex: 0 0 110px; width: 110px; padding: 8px 4px; }
+.care-remove { flex: 0 0 44px; min-height: 44px; border: 0; border-radius: 8px; background: var(--paper); color: var(--clay); cursor: pointer; }
