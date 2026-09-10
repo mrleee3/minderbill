@@ -3,6 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract } from "../db";
 import { addDays, fmtDateLong, todayISO, weekdayIndex } from "../lib/dates";
 import { diaryDays, careEntryText, diaryFileName } from "../lib/diary";
+import { CareIcon } from "./CareIcon";
 import { buildDiaryPdf } from "../lib/diaryPdf";
 
 export function ChildDiary({ child }: { child: ChildContract }) {
@@ -57,7 +58,7 @@ export function ChildDiary({ child }: { child: ChildContract }) {
       {days.map(day => (
         <section className="diary-day" key={day.id ?? day.date}>
           <h3>{fmtDateLong(day.date)} {day.date.slice(0, 4)}</h3>
-          {(day.careEntries ?? []).map(entry => <div className="diary-entry" key={entry.id}><time>{entry.time}</time><span>{careEntryText(entry)}</span></div>)}
+          {(day.careEntries ?? []).map(entry => <div className={`diary-entry care-${entry.kind}`} key={entry.id}><CareIcon kind={entry.kind} /><div className="diary-entry-content"><div className="care-entry-heading"><time>{entry.time}</time><strong>{entry.label}</strong></div>{careEntryText(entry) !== entry.label && <p>{careEntryText(entry).slice(entry.label.length + 3)}</p>}</div></div>)}
           {day.note?.trim() && <p className="diary-note"><strong>Notes</strong>{day.note}</p>}
         </section>
       ))}

@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { CareIcon } from "./CareIcon";
 import type { CareEntry } from "../db";
 
 export function CareEntryEditor({ entry, isNew, onSave, onClose, onRemove }: {
@@ -34,7 +35,7 @@ export function CareEntryEditor({ entry, isNew, onSave, onClose, onRemove }: {
       onKeyDown={event => { if (event.key === "Escape") event.stopPropagation(); }}
       onCancel={event => { event.preventDefault(); onClose(); }}>
       <form className="form" onSubmit={event => { event.preventDefault(); if (valid) onSave(draft); }}>
-        <h2 id={titleId} ref={heading} tabIndex={-1}>{isNew ? "Add" : "Edit"} {entry.label.toLowerCase()}</h2>
+        <h2 id={titleId} ref={heading} tabIndex={-1}><CareIcon kind={entry.kind} />{isNew ? "Add" : "Edit"} {entry.label.toLowerCase()}</h2>
         <label className="field">
           <span>Time</span>
           <input type="time" required value={draft.time} onChange={event => update({ time: event.target.value })} />

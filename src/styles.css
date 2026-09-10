@@ -911,3 +911,31 @@ button.child-card { padding: 12px 14px; }
 .diary-note { margin: 10px 0 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .diary-note strong { display: block; margin-bottom: 3px; }
 .child-card > .card-action { padding: 0 11px; min-width: 44px; justify-content: center; }
+
+/* Calm activity colours are shared by shortcuts, editor and diary. */
+.care-toileting { --care-colour: #496a55; --care-soft: #edf4ee; --care-line: #ceded0; }
+.care-food { --care-colour: #88591b; --care-soft: #fbf0dc; --care-line: #ecd8b4; }
+.care-drink { --care-colour: #376a88; --care-soft: #eaf3fa; --care-line: #cbdfea; }
+.care-icon { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 10px; background: var(--care-soft); color: var(--care-colour); }
+.care-section-title { font-family: var(--display); font-size: 17px; margin: 22px 0 12px; color: var(--ink); }
+.care-group-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; margin-top: 16px; }
+.care-shortcuts { margin: 10px 0 16px; }
+.care-shortcuts .chip { color: var(--care-colour); background: var(--care-soft); border-color: var(--care-line); }
+.care-shortcuts .chip:active { filter: brightness(0.95); }
+.care-timeline-title { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--mist); padding-top: 20px; }
+.care-timeline-title > span { font-family: inherit; font-size: 12px; color: var(--ink-60); background: var(--mist); border-radius: 20px; padding: 2px 8px; }
+.care-empty { font-size: 13px; color: var(--ink-60); margin: 0 0 10px; }
+.care-entries { gap: 8px; }
+.care-entry { position: relative; padding: 8px 10px; gap: 8px; border-color: var(--care-line); }
+.care-entry:not(:last-child)::after { content: ""; position: absolute; left: 24px; top: 100%; height: 9px; border-left: 2px solid var(--mist); }
+.care-entry-heading { gap: 7px; }
+.care-entry-heading time { font-size: 12px; }
+.care-edit { background: var(--care-soft); color: var(--care-colour); padding: 0 8px; }
+.care-dialog h2 { display: flex; align-items: center; gap: 10px; }
+.diary-day h3 { border-bottom: 1px solid var(--mist); padding-bottom: 12px; }
+.diary-entry { gap: 10px; border-top: 0; position: relative; padding: 8px 0; }
+.diary-entry:not(:last-child)::after { content: ""; position: absolute; left: 14px; top: 38px; bottom: -8px; border-left: 2px solid var(--mist); }
+.diary-entry-content { min-width: 0; flex: 1; }
+.diary-entry .care-entry-heading strong { white-space: normal; overflow-wrap: anywhere; }
+.diary-entry-content p { font-size: 13px; line-height: 1.5; color: var(--ink-60); white-space: pre-wrap; overflow-wrap: anywhere; margin: 3px 0 0; }
+.diary-note { background: var(--paper); border-radius: 10px; padding: 12px; }
