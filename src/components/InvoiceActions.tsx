@@ -4,6 +4,7 @@ import type { DetailedLine } from "../engine/monthInvoice";
 import { formatPence } from "../engine/invoice";
 import { monthLabel } from "../lib/dates";
 import { buildInvoicePdf, invoiceFileName, invoiceNumber } from "../lib/invoicePdf";
+import { exportPdf } from "../lib/exportPdf";
 import type { Business } from "../lib/invoiceHtml";
 
 /**
@@ -43,16 +44,11 @@ export function InvoiceActions({
     setNote("");
     try {
       const file = await makeFile();
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `Invoice — ${label}`,
-          text: `${child.name} — childcare invoice for ${label}. Total due ${formatPence(total)}.`,
-        });
-      } else {
-        download(file);
-        setNote("Saved to your downloads.");
-      }
+      const result = await exportPdf(file, {
+        title: `Invoice — ${label}`,
+        text: `${child.name} — childcare invoice for ${label}. Total due ${formatPence(total)}.`,
+      }, true);
+      setNote(result === "downloaded" ? "PDF download started." : "");
     } catch (e) {
       if ((e as Error).name !== "AbortError") setNote("Couldn't share that — try Save PDF instead.");
     } finally {
@@ -64,10 +60,10 @@ export function InvoiceActions({
     setBusy("save");
     setNote("");
     try {
-      download(await makeFile());
-      setNote("PDF saved.");
-    } catch {
-      setNote("Couldn't create the PDF.");
+      const result = await exportPdf(await makeFile(), { title: `Invoice — ${label}` });
+      setNote(result === "downloaded" ? "PDF download started." : "");
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") setNote("Couldn't save the PDF. Please try again.");
     } finally {
       setBusy(null);
     }
@@ -109,13 +105,4 @@ export function InvoiceActions({
       {note && <p className="hint">{note}</p>}
     </>
   );
-}
-
-function download(file: File) {
-  const url = URL.createObjectURL(file);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }

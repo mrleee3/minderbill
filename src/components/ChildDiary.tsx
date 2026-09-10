@@ -4,6 +4,7 @@ import { db, type ChildContract } from "../db";
 import { addDays, fmtDateLong, todayISO, weekdayIndex } from "../lib/dates";
 import { diaryDays, careEntryText, diaryFileName } from "../lib/diary";
 import { CareIcon } from "./CareIcon";
+import { exportPdf as exportPdfFile } from "../lib/exportPdf";
 import { buildDiaryPdf } from "../lib/diaryPdf";
 
 export function ChildDiary({ child }: { child: ChildContract }) {
@@ -22,16 +23,8 @@ export function ChildDiary({ child }: { child: ChildContract }) {
     try {
       const bytes = await buildDiaryPdf(child, from, to, days);
       const file = new File([bytes as BlobPart], diaryFileName(child.name, from, to), { type: "application/pdf" });
-      if (share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: `${child.name} - daily diary` });
-      } else {
-        const url = URL.createObjectURL(file);
-        const link = document.createElement("a");
-        link.href = url; link.download = file.name;
-        document.body.appendChild(link); link.click(); link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 30000);
-        setMessage("PDF download started.");
-      }
+      const result = await exportPdfFile(file, { title: `${child.name} - daily diary` }, share);
+      setMessage(result === "downloaded" ? "PDF download started." : "");
     } catch (error) {
       if ((error as Error).name !== "AbortError") setMessage("Could not export. Please try Save PDF again.");
     } finally { setBusy(false); }

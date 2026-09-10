@@ -41,7 +41,7 @@ export function IconMonth({ active }: IconProps) {
 export function IconInvoices({ active }: IconProps) {
   return (
     <svg {...S}>
-      <path d="M5.6 3.4h9.1l4.7 4.7v12.5H5.6z" fill={active ? "currentColor" : "none"} opacity={active ? 0.13 : 1} />
+      {active && <path d="M5.6 3.4h9.1l4.7 4.7v12.5H5.6z" fill="currentColor" stroke="none" opacity={0.13} />}
       <path d="M5.6 3.4h9.1l4.7 4.7v12.5H5.6z" />
       <path d="M14.4 3.6v4.6h4.7" />
       <path d="M8.9 12.4h6.2M8.9 15.7h6.2M8.9 19h3.4" />
@@ -74,5 +74,5 @@ export function IconSettings({ active }: IconProps) {
 }
 
 export function IconDiary() {
-  return <svg {...S} aria-hidden="true"><path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Z"/><path d="M12 5v15M6 8h3M6 11h3M15 8h3M15 11h3"/></svg>;
+  return <svg {...S} aria-hidden="true"><path d="M12 5c-2.5-1.8-5.5-1.8-8-1v15c2.5-.8 5.5-.8 8 1 2.5-1.8 5.5-1.8 8-1V4c-2.5-.8-5.5-.8-8 1Z"/><path d="M12 5v15M6 8h3M6 11h3M15 8h3M15 11h3"/></svg>;
 }

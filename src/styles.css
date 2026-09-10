@@ -910,7 +910,9 @@ button.child-card { padding: 12px 14px; }
 .diary-entry span { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 .diary-note { margin: 10px 0 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .diary-note strong { display: block; margin-bottom: 3px; }
-.child-card > .card-action { padding: 0 11px; min-width: 44px; justify-content: center; }
+div.child-card { gap: 0; }
+.child-card > .card-action { flex: 0 0 48px; width: 48px; padding: 0; min-width: 48px; justify-content: center; color: var(--ink-60); }
+.child-card > .card-action svg { display: block; flex: none; width: 22px; height: 22px; }
 
 /* Calm activity colours are shared by shortcuts, editor and diary. */
 .care-toileting { --care-colour: #496a55; --care-soft: #edf4ee; --care-line: #ceded0; }
