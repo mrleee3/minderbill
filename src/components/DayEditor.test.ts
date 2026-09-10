@@ -33,6 +33,8 @@ it("reopens saved care entries alongside the original free-text note", () => {
   }));
   expect(html).toContain("12:15");
   expect(html).toContain("Pasta and peas");
-  expect(html).toContain('value="most" selected=""');
+  expect(html).toContain("Eaten: most");
+  expect(html).toContain('aria-label="Edit Lunch at 12:15"');
+  expect(html).not.toContain("<select");
   expect(html).toContain("Grandad collecting");
 });

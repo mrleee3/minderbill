@@ -876,7 +876,7 @@ button.child-card { padding: 12px 14px; }
 .debug-trail { display: flex; flex-direction: column; opacity: 0.75; margin-top: 3px; }
 
 /* Daily care quick entries */
-.form textarea, .care-entry select {
+.form textarea, .care-dialog select {
   font: inherit; color: var(--ink); background: var(--card);
   border: 1px solid var(--mist); border-radius: 10px; padding: 10px 12px;
   width: 100%; min-width: 0; min-height: 44px;
@@ -884,11 +884,23 @@ button.child-card { padding: 12px 14px; }
 .form textarea { resize: vertical; }
 .care-shortcuts { margin: 8px 0; }
 .care-entries { display: grid; gap: 10px; margin: 12px 0; }
-.care-entry { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--mist); border-radius: 12px; background: var(--card); }
-.care-entry-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.care-entry-head strong { flex: 1; min-width: 0; font-size: 14px; }
-.care-entry-head input[type="time"] { flex: 0 0 110px; width: 110px; padding: 8px 4px; }
-.care-remove { flex: 0 0 44px; min-height: 44px; border: 0; border-radius: 8px; background: var(--paper); color: var(--clay); cursor: pointer; }
+/* One compact row per entry; full details live in the focused editor. */
+.care-entry { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--mist); border-radius: 12px; background: var(--card); }
+.care-entry-summary { flex: 1; min-width: 0; font-size: 14px; }
+.care-entry-heading { display: flex; gap: 8px; align-items: baseline; }
+.care-entry-heading time { flex: none; color: var(--ink-60); font-variant-numeric: tabular-nums; }
+.care-entry-heading strong, .care-entry-summary p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.care-entry-summary p { color: var(--ink-60); font-size: 13px; margin: 3px 0 0; }
+.care-edit { flex: none; min-height: 44px; padding: 0 10px; border: 0; border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+/* Native modal top layer escapes the scrolling day sheet and traps focus. */
+.care-dialog { box-sizing: border-box; width: calc(100% - 32px); max-width: 420px; max-height: calc(100dvh - 48px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); margin: auto; padding: 20px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--mist); border-radius: 18px; background: var(--paper); color: var(--ink); }
+.care-dialog::backdrop { background: rgba(30, 42, 50, 0.5); }
+.care-dialog h2 { margin: 0 0 4px; font-family: var(--display); font-size: 20px; outline: none; }
+.care-dialog .form { gap: 14px; }
+.care-dialog .field { flex: none; }
+.care-dialog-actions { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.care-dialog-actions > * { flex: 1; min-width: 0; }
+.care-dialog .care-delete { color: var(--clay); }
 
 .child-diary { padding-top: 8px; }
 .diary-day { border: 1px solid var(--mist); border-radius: 12px; padding: 12px 14px; margin-top: 14px; background: var(--card); }
