@@ -1,3 +1,4 @@
+import { useWorkspaceForm } from "./Workspace";
 import { useMemo, useState } from "react";
 import { db, type ChildContract, type DaySlot } from "../db";
 import { WEEKDAY_LABELS, fmtDateLong, inputToMin, minToInput, todayISO } from "../lib/dates";
@@ -96,6 +97,8 @@ export function ChildForm({
   const scheduleChanged =
     !!currentSchedule && JSON.stringify(currentSchedule) !== JSON.stringify(schedule);
 
+  const markSaved = useWorkspaceForm(JSON.stringify({ name, dob, rateStr, rateFrom, startDate, endDate, schedule, schedFrom, funded, fundedHours, laRateStr, minEffStr, topUpLabel, policies, payerName, payerEmail, tfcRef }));
+
   async function save() {
     const ratePence = poundsToPence(rateStr);
     if (!name.trim() || ratePence <= 0) return;
@@ -145,6 +148,7 @@ export function ChildForm({
       },
     };
     await db.children.put(contract);
+    markSaved();
     onDone();
   }
 
@@ -153,6 +157,7 @@ export function ChildForm({
     if (!confirm(`Remove ${existing.name} and all their logs? This can't be undone.`)) return;
     await db.dayLogs.where("childId").equals(existing.id).delete();
     await db.children.delete(existing.id);
+    markSaved();
     onDone();
   }
 

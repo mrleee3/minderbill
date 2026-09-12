@@ -8,7 +8,8 @@ import { getBusiness, getClosures, getTermBlocks, childColour, type Business } f
 import type { Closure } from "../data/closures";
 import { unconfirmedInPeriod } from "../lib/confirm";
 import { ABSENCE_LABELS } from "../components/DayEditor";
-import { Sheet } from "../components/Sheet";
+import { useDesktop } from "../lib/useDesktop";
+import { WorkspaceDetail } from "../components/Workspace";
 import { A4Preview } from "../components/A4Preview";
 import { renderPrintHTML } from "../lib/invoiceHtml";
 import { InvoiceActions } from "../components/InvoiceActions";
@@ -19,6 +20,8 @@ function prevMonthPeriod(): string {
 }
 
 export function Invoices() {
+  const desktop = useDesktop();
+  const [filter, setFilter] = useState<"all" | "draft" | "unpaid" | "paid">("all");
   const [period, setPeriod] = useState(prevMonthPeriod());
   const childrenQ = useLiveQuery(() => db.children.toArray(), []);
   const loading = childrenQ === undefined;
@@ -46,14 +49,28 @@ export function Invoices() {
       .filter((i) => i.childId === c.id)
       .sort((a, b) => b.version - a.version)[0];
 
+  const matchesFilter = (c: ChildContract) => {
+    if (!desktop || filter === "all") return true;
+    const invoice = latestFor(c);
+    const paid = !!invoice && invoice.totalPence > 0 && invoice.paidPence >= invoice.totalPence;
+    return filter === "draft" ? !invoice : filter === "paid" ? paid : !!invoice && invoice.paidPence < invoice.totalPence;
+  };
+  const visibleChildren = children.filter(c => (!c.endDate || c.endDate >= `${period}-01`) && matchesFilter(c));
+
   return (
-    <>
+    <div className="workspace invoices-workspace">
+      <section className="workspace-list" aria-label="Monthly invoices">
       <div className="date-nav">
         <button className="nav-btn" onClick={() => setPeriod(addMonths(`${period}-01`, -1).slice(0, 7))} aria-label="Previous month">‹</button>
         <div className="date-label"><strong>{monthLabel(`${period}-01`)}</strong></div>
         <button className="nav-btn" onClick={() => setPeriod(addMonths(`${period}-01`, 1).slice(0, 7))} aria-label="Next month">›</button>
       </div>
 
+      <label className="desktop-date">Invoice month<input type="month" value={period} onChange={e => { if (/^\d{4}-\d{2}$/.test(e.target.value)) setPeriod(e.target.value); }} /></label>
+      <div className="desktop-detail-tabs invoice-filters" role="group" aria-label="Invoice status">
+        {([['all', 'All'], ['draft', 'To generate'], ['unpaid', 'Unpaid'], ['paid', 'Paid']] as const).map(([value, label]) => <button key={value} className={`chip${filter === value ? " on" : ""}`} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}
+      </div>
+      {desktop && !loading && children.length > 0 && !visibleChildren.length && <p className="hint">No invoices match this view.</p>}
       {unconfirmed > 0 && (
         <p className="hint warn">
           {unconfirmed} day{unconfirmed > 1 ? "s" : ""} in {monthLabel(`${period}-01`)} not yet
@@ -71,13 +88,12 @@ export function Invoices() {
         </div>
       )}
 
-      {children
-        .filter((c) => !c.endDate || c.endDate >= `${period}-01`)
+      {visibleChildren
         .map((c, i) => {
         const inv = latestFor(c);
         const paid = inv && inv.paidPence >= inv.totalPence && inv.totalPence > 0;
         return (
-          <button key={c.id} className="child-card" onClick={() => setOpen(c)}>
+          <button key={c.id} className={`child-card${open?.id === c.id ? " selected" : ""}`} aria-pressed={open?.id === c.id} onClick={() => setOpen(c)}>
             <span className="avatar" style={{ background: childColour(c, i) }}>
               <span className="avatar-letter">{c.name[0]?.toUpperCase()}</span>
             </span>
@@ -99,13 +115,14 @@ export function Invoices() {
           );
         })}
 
-      <Sheet
+      </section>
+      <WorkspaceDetail
         open={!!open}
         title={open ? `${open.name} — ${monthLabel(`${period}-01`)}` : ""}
         onClose={() => setOpen(null)}
       >
         {open && business && (
-          <InvoiceDetail
+          <InvoiceDetail key={`${open.id}:${period}`}
             child={open}
             period={period}
             blocks={blocks}
@@ -114,8 +131,8 @@ export function Invoices() {
             saved={latestFor(open)}
           />
         )}
-      </Sheet>
-    </>
+      </WorkspaceDetail>
+    </div>
   );
 }
 

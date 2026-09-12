@@ -1,3 +1,4 @@
+import { useWorkspaceForm } from "./Workspace";
 import { useState } from "react";
 import { db, type AbsenceReason, type CareEntry, type ChildContract, type DayLog } from "../db";
 import { inputToMin, minToInput } from "../lib/dates";
@@ -41,6 +42,8 @@ export function DayEditor({
   const [note, setNote] = useState(resolved?.note ?? "");
 
   const [careEntries, setCareEntries] = useState<CareEntry[]>(log?.careEntries ?? []);
+  const [saved, setSaved] = useState(false);
+  const markSaved = useWorkspaceForm(JSON.stringify({ start, end, absence, note, careEntries }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const valid = end > start && careEntries.every(entry => /^([01]\d|2[0-3]):[0-5]\d$/.test(entry.time));
@@ -68,6 +71,8 @@ export function DayEditor({
       } else {
         await db.dayLogs.put(entry);
       }
+      markSaved();
+      setSaved(true);
       onDone();
     } catch {
       setError("Could not save. Please try again; your entries are still here.");
@@ -85,7 +90,7 @@ export function DayEditor({
   }
 
   return (
-    <div className="form day-editor">
+    <div className="form day-editor" onChange={() => setSaved(false)} onClickCapture={e => { if ((e.target as HTMLElement).closest(".chip, .care-edit")) setSaved(false); }}>
       <div className="form-section">Hours</div>
       <div className="time-row">
         <input type="time" value={minToInput(start)} onChange={(e) => setStart(inputToMin(e.target.value))} />
@@ -126,7 +131,7 @@ export function DayEditor({
         </p>
       )}
 
-      <CareNotes entries={careEntries} onChange={setCareEntries} />
+      <CareNotes entries={careEntries} onChange={entries => { setCareEntries(entries); setSaved(false); }} />
       <label className="field">
         <span>Note (optional)</span>
         <textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. picked up by grandad" />
@@ -134,7 +139,8 @@ export function DayEditor({
 
       {careEntries.some(entry => !/^([01]\d|2[0-3]):[0-5]\d$/.test(entry.time)) && <p className="hint warn">Enter a time for each care entry.</p>}
       {error && <p className="hint warn" role="alert">{error}</p>}
-      <button className="btn-primary" onClick={save} disabled={!valid || saving}>
+      {saved && <p className="hint saved-notice" role="status">Saved. You can continue editing or select another child.</p>}
+      <button className="btn-primary day-save" onClick={save} disabled={!valid || saving}>
         {saving ? "Saving…" : "Save"}
       </button>
       {log && (

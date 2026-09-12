@@ -26,7 +26,7 @@ import { ChildMonthHistory } from "../components/ChildMonthHistory";
 import { hasAttendance } from "../lib/confirm";
 import { useSwipe } from "../lib/useSwipe";
 
-export function Month() {
+export function Month({ onOpenDay }: { onOpenDay?: (date: string) => void }) {
   const [viewDate, setViewDate] = useState(todayISO());
   const [selDay, setSelDay] = useState(todayISO());
   const [editing, setEditing] = useState<ChildContract | null>(null);
@@ -95,7 +95,8 @@ export function Month() {
     .sort((a, b) => (a.resolved?.startMin ?? 9999) - (b.resolved?.startMin ?? 9999));
 
   return (
-    <>
+    <div className="month-workspace">
+      <section className="month-calendar" aria-label="Calendar">
       <div className="date-nav">
         <button className="nav-btn" onClick={() => shiftMonthAnimated(-1)} aria-label="Previous month">‹</button>
         <div className="date-label"><strong>{monthLabel(viewDate)}</strong></div>
@@ -153,6 +154,9 @@ export function Month() {
         <span><i className="swatch" style={{ background: CLOSURE_COLOURS.bankHoliday }} /> {CLOSURE_LABELS.bankHoliday}</span>
       </div>
 
+      </section>
+      <section className="month-selection" aria-label="Selected day">
+      {onOpenDay && <button className="btn-quiet desktop-open-day" onClick={() => onOpenDay(selDay)}>Open this day’s attendance →</button>}
       <div className="form-section">{selDay === today ? "Today" : fmtDateLong(selDay)}</div>
       {(() => {
         const c = closureOn(selDay, closures);
@@ -215,6 +219,7 @@ export function Month() {
           </button>
         ))}
 
+      </section>
       <Sheet
         open={!!editing}
         title={editing ? `${editing.name} — ${monthLabel(viewDate)}` : ""}
@@ -224,6 +229,6 @@ export function Month() {
           <ChildMonthHistory child={editing} month={viewDate} closures={closures} />
         )}
       </Sheet>
-    </>
+    </div>
   );
 }

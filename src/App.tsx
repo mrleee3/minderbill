@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
+import { WorkspaceProvider, useWorkspaceNavigation } from "./components/Workspace";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { DebugPanel, debugEnabled } from "./components/DebugPanel";
 import {
@@ -32,16 +33,18 @@ function Screen({
   tab,
   date,
   setDate,
+  openDay,
 }: {
   tab: Tab;
   date: string;
   setDate: (iso: string) => void;
+  openDay: (iso: string) => void;
 }) {
   switch (tab) {
     case "today":
       return <Today date={date} setDate={setDate} />;
     case "month":
-      return <Month />;
+      return <Month onOpenDay={openDay} />;
     case "invoices":
       return <Invoices />;
     case "children":
@@ -51,7 +54,10 @@ function Screen({
   }
 }
 
-export default function App() {
+export default function App() { return <WorkspaceProvider><AppWorkspace /></WorkspaceProvider>; }
+
+function AppWorkspace() {
+  const canLeave = useWorkspaceNavigation();
   const [tab, setTab] = useState<Tab>("today");
   const [date, setDate] = useState(todayISO());
   const pending = useLiveQuery(() => findUnconfirmed(), []) ?? [];
@@ -65,6 +71,7 @@ export default function App() {
   const openOldest = () => {
     const oldest = pending[pending.length - 1];
     if (!oldest) return;
+    if (!canLeave()) return;
     setDate(oldest);
     setTab("today");
   };
@@ -103,8 +110,9 @@ export default function App() {
         </button>
       )}
 
-      <main className="screen">
-        <Screen tab={tab} date={date} setDate={setDate} />
+      <main className={`screen screen-${tab}`}>
+        <div className="desktop-heading"><h2>{TABS.find(t => t.id === tab)?.label}</h2><span>{tab === "today" ? "Attendance and daily care" : tab === "children" ? "Contracts, diaries and invoices" : tab === "invoices" ? "Review, generate and manage payments" : tab === "month" ? "Plan and review attendance" : "Business and preferences"}</span></div>
+        <Screen tab={tab} date={date} setDate={setDate} openDay={iso => { if (canLeave()) { setDate(iso); setTab("today"); } }} />
       </main>
       <div id="print-root" aria-hidden="true" />
       <nav
@@ -116,7 +124,8 @@ export default function App() {
           <button
             key={t.id}
             className={`tab${tab === t.id ? " active" : ""}`}
-            onClick={() => setTab(t.id)}
+            aria-current={tab === t.id ? "page" : undefined}
+            onClick={() => { if (tab !== t.id && canLeave()) setTab(t.id); }}
           >
             <span className="icon-wrap">
               <t.Icon active={tab === t.id} />

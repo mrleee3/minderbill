@@ -8,10 +8,15 @@ import { resolveDay } from "../lib/schedule";
 import { childColour, getClosures } from "../lib/settings";
 import { CLOSURE_COLOURS, CLOSURE_LABELS, closureOn, type Closure } from "../data/closures";
 import { confirmDay, unconfirmDay } from "../lib/confirm";
-import { Sheet } from "../components/Sheet";
+import { WorkspaceDetail, useWorkspaceNavigation } from "../components/Workspace";
+import { useDesktop } from "../lib/useDesktop";
 import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
 export function Today({ date, setDate }: { date: string; setDate: (d: string) => void }) {
+  const desktop = useDesktop();
+  const canLeave = useWorkspaceNavigation();
+  const choose = (child: ChildContract | null) => { if (child?.id !== editing?.id && canLeave()) setEditing(child); };
+  const changeDate = (next: string) => { if (next && next !== date && canLeave()) setDate(next); };
   const childrenQ = useLiveQuery(() => db.children.toArray(), []);
   const loading = childrenQ === undefined;
   const allChildren = childrenQ ?? [];
@@ -53,19 +58,21 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
   const isToday = date === todayISO();
 
   return (
-    <>
+    <div className="workspace today-workspace">
+      <section className="workspace-list" aria-label="Daily attendance">
       <div className="date-nav">
-        <button className="nav-btn" onClick={() => setDate(addDays(date, -1))} aria-label="Previous day">‹</button>
+        <button className="nav-btn" onClick={() => changeDate(addDays(date, -1))} aria-label="Previous day">‹</button>
         <div className="date-label">
           <strong>{isToday ? "Today" : fmtDateLong(date)}</strong>
           {isToday && <span className="hint"> {fmtDateLong(date)}</span>}
           {!isToday && (
-            <button className="link" onClick={() => setDate(todayISO())}>Back to today</button>
+            <button className="link" onClick={() => changeDate(todayISO())}>Back to today</button>
           )}
         </div>
-        <button className="nav-btn" onClick={() => setDate(addDays(date, 1))} aria-label="Next day">›</button>
+        <button className="nav-btn" onClick={() => changeDate(addDays(date, 1))} aria-label="Next day">›</button>
       </div>
 
+      <label className="desktop-date">Jump to date<input aria-label="Attendance date" type="date" value={date} onChange={e => changeDate(e.target.value)} /></label>
       {closure && (
         <div className="closure-note" style={{ borderColor: CLOSURE_COLOURS[closure.kind] }}>
           <strong>{closure.label}</strong>
@@ -88,8 +95,9 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
       {attending.map(({ child, colour, resolved }, i) => (
         <button
           key={child.id}
-          className="child-card"
-          onClick={() => setEditing(child)}
+          className={`child-card${editing?.id === child.id ? " selected" : ""}`}
+          aria-pressed={editing?.id === child.id}
+          onClick={() => choose(child)}
           style={justConfirmed ? ({ "--stagger": `${i * 70}ms` } as CSSProperties) : undefined}
         >
           <span className="avatar" style={{ background: colour }}>
@@ -147,7 +155,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         <>
           <div className="form-section">Not attending {isToday ? "today" : "this day"}</div>
           {notToday.map(({ child, colour }) => (
-            <button key={child.id} className="child-card quiet" onClick={() => setEditing(child)}>
+            <button key={child.id} className={`child-card quiet${editing?.id === child.id ? " selected" : ""}`} onClick={() => choose(child)}>
               <span className="avatar muted" style={{ background: `${colour}33` }}>
                 <span className="avatar-letter muted-letter">{child.name[0]?.toUpperCase()}</span>
               </span>
@@ -196,22 +204,23 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </div>
       )}
 
-      <Sheet
+      </section>
+      <WorkspaceDetail
         open={!!editing}
         title={editing ? `${editing.name} — ${fmtDateLong(date)}` : ""}
-        onClose={() => setEditing(null)}
+        onClose={() => choose(null)}
       >
         {editing && (
-          <DayEditor
+          <DayEditor key={`${editing.id}:${date}`}
             closures={closures}
             child={editing}
             date={date}
             resolved={resolveDay(editing, date, logFor(editing), closures)}
             log={logFor(editing)}
-            onDone={() => setEditing(null)}
+            onDone={() => { if (!desktop) setEditing(null); }}
           />
         )}
-      </Sheet>
-    </>
+      </WorkspaceDetail>
+    </div>
   );
 }
