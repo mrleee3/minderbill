@@ -501,7 +501,7 @@ body.invoice-viewer-open { overflow: hidden; }
 .settings-category > summary small { color: var(--ink-60); margin-top: 3px; }
 .settings-category-body { padding: 0 18px 20px; border-top: 1px solid var(--mist); padding-top: 16px; }
 .settings-category-body > .form-section:first-child { margin-top: 0; }
-.closure-edit { flex: none; padding: 8px; min-height: 44px; }
+.closure-edit { flex: none; width: auto; padding: 8px; min-height: 44px; }
 .holiday-dialog { max-width: 500px; padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)); }
 .holiday-dialog .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .range-month-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
