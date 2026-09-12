@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { InvoiceViewer } from "./InvoiceViewer";
 
 const A4_WIDTH_PX = 794; // 210mm at 96dpi
 
@@ -9,6 +10,7 @@ const A4_WIDTH_PX = 794; // 210mm at 96dpi
 export function A4Preview({ html }: { html: string }) {
   const frame = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.42);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     const el = frame.current;
@@ -21,12 +23,18 @@ export function A4Preview({ html }: { html: string }) {
   }, []);
 
   return (
+    <>
     <div className="a4-frame" ref={frame}>
       <div
         className="a4-page"
         style={{ "--a4-scale": scale } as React.CSSProperties}
         dangerouslySetInnerHTML={{ __html: html }}
       />
+      <button type="button" className="invoice-expand" aria-label="View invoice full screen" onClick={() => setExpanded(true)}>
+        <span>⤢ Full screen</span>
+      </button>
     </div>
+    {expanded && <InvoiceViewer html={html} onClose={() => setExpanded(false)} />}
+    </>
   );
 }

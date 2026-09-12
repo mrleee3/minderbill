@@ -13,12 +13,11 @@ import {
 import { fundedWeeksBetween } from "../lib/terms";
 import {
   CLOSURE_COLOURS,
-  CLOSURE_LABELS,
   UK_BANK_HOLIDAYS,
   type Closure,
-  type ClosureKind,
 } from "../data/closures";
 import { getClosures, setClosures as saveClosures } from "../lib/settings";
+import { HolidayEditor } from "../components/HolidayEditor";
 import { Collapsible } from "../components/Collapsible";
 import { fmtDateLong } from "../lib/dates";
 import { debugEnabled, setDebugEnabled } from "../components/DebugPanel";
@@ -31,9 +30,7 @@ export function Settings() {
   const [blocks, setBlocks] = useState<TermBlock[]>([]);
   const [savedTick, setSavedTick] = useState(false);
   const [closures, setClosureList] = useState<Closure[]>([]);
-  const [newStart, setNewStart] = useState(todayISO());
-  const [newEnd, setNewEnd] = useState(todayISO());
-  const [newLabel, setNewLabel] = useState("");
+  const [holiday, setHoliday] = useState<Closure | "new" | null>(null);
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
@@ -44,23 +41,8 @@ export function Settings() {
 
   async function persistClosures(next: Closure[]) {
     const sorted = [...next].sort((a, b) => a.start.localeCompare(b.start));
-    setClosureList(sorted);
     await saveClosures(sorted);
-  }
-
-  async function addClosure(kind: ClosureKind) {
-    if (newEnd < newStart) return;
-    await persistClosures([
-      ...closures,
-      {
-        id: `c-${Date.now()}`,
-        kind,
-        start: newStart,
-        end: newEnd,
-        label: newLabel.trim() || CLOSURE_LABELS[kind],
-      },
-    ]);
-    setNewLabel("");
+    setClosureList(sorted);
   }
 
   const bizField = (key: keyof Business, label: string, placeholder = "") => (
@@ -125,13 +107,87 @@ export function Settings() {
       setMsg("Backup restored.");
       getBusiness().then(setBiz);
       getTermBlocks().then(setBlocks);
+      getClosures().then(setClosureList);
     } catch {
       setMsg("That file couldn't be read as a MinderBill backup.");
     }
   }
 
   return (
-    <div className="form">
+    <div className="form settings-categories">
+      <p className="hint">Manage your business, time off and app data.</p>
+      <details className="settings-category" open>
+        <summary><span>Holidays & closures</span><small>Your time off and bank holidays</small></summary>
+        <div className="form settings-category-body">
+      <p className="hint">
+        Days you're closed. Every child's planned day becomes that absence automatically and is
+        charged by their own policy — you can still override one child on the day itself.
+      </p>
+      <button className="btn-primary" onClick={() => setHoliday("new")}>+ Add holiday / closure</button>
+      {(() => {
+        const row = (c: Closure) => (
+          <div key={c.id} className="closure-row">
+            <i className="swatch" style={{ background: CLOSURE_COLOURS[c.kind] }} />
+            <span className="closure-main">
+              <span className="closure-label">{c.label}</span>
+              <span className="hint">
+                {c.start === c.end
+                  ? fmtDateLong(c.start)
+                  : `${fmtDateLong(c.start)} \u2013 ${fmtDateLong(c.end)}`}
+              </span>
+            </span>
+            <button className="btn-quiet closure-edit" aria-label={`Edit ${c.label}`} onClick={() => setHoliday(c)}>Edit</button>
+            <button
+              className="sheet-close"
+              aria-label={`Remove ${c.label}`}
+              onClick={() => { if (confirm(`Remove ${c.label}? These days will use the usual attendance plan again.`)) void persistClosures(closures.filter((x) => x.id !== c.id)); }}
+            >
+              ✕
+            </button>
+          </div>
+        );
+        const mine = closures.filter((c) => c.kind === "minderHoliday");
+        const bankAll = closures.filter((c) => c.kind === "bankHoliday");
+        const today = todayISO();
+        const bankUpcoming = bankAll.filter((c) => c.end >= today);
+        const bankPast = bankAll.filter((c) => c.end < today);
+        return (
+          <>
+            <Collapsible title="My holidays" count={mine.length} defaultOpen>
+              {mine.length === 0 ? (
+                <p className="hint">None yet — add your first closure above.</p>
+              ) : (
+                mine.map(row)
+              )}
+            </Collapsible>
+            <Collapsible title="Bank holidays" count={bankAll.length}>
+              {bankUpcoming.map(row)}
+              {bankPast.length > 0 && (
+                <Collapsible title="Earlier" count={bankPast.length}>
+                  {bankPast.map(row)}
+                </Collapsible>
+              )}
+              <button
+                className="btn-quiet"
+                onClick={() =>
+                  persistClosures([
+                    ...closures.filter((c) => c.kind !== "bankHoliday"),
+                    ...UK_BANK_HOLIDAYS,
+                  ])
+                }
+              >
+                Reset UK bank holidays
+              </button>
+            </Collapsible>
+          </>
+        );
+      })()}
+
+        </div>
+      </details>
+      <details className="settings-category">
+        <summary><span>Business & payment</span><small>Details shown on your invoices</small></summary>
+        <div className="form settings-category-body">
       <div className="form-section">Business details (shown on invoices)</div>
       <div className="field-row">
         {bizField("name", "Business name")}
@@ -154,7 +210,11 @@ export function Settings() {
       {bizField("paymentNote", "Extra payment note", "e.g. Please pay within 7 days")}
       <button className="btn-primary" onClick={saveBiz}>{savedTick ? "Saved ✓" : "Save details"}</button>
 
-      <div className="form-section">Funded term dates</div>
+        </div>
+      </details>
+      <details className="settings-category">
+        <summary><span>Funding & term dates</span><small>Funded weeks and school terms</small></summary>
+        <div className="form settings-category-body">
       <p className="hint">
         Prefilled from Surrey school term dates for 2025/26 and 2026/27 (the 2026/27 year has a
         two-week October half term).
@@ -206,94 +266,14 @@ export function Settings() {
         Academic year {ay.label}: <strong>{fundedCount} funded weeks</strong> (LA standard is 38).
       </p>
 
-      <div className="form-section">Closures</div>
-      <p className="hint">
-        Days you're closed. Every child's planned day becomes that absence automatically and is
-        charged by their own policy — you can still override one child on the day itself.
-      </p>
-      <div className="field-row">
-        <label className="field">
-          <span>From</span>
-          <input type="date" value={newStart} onChange={(e) => { setNewStart(e.target.value); if (newEnd < e.target.value) setNewEnd(e.target.value); }} />
-        </label>
-        <label className="field">
-          <span>To</span>
-          <input type="date" value={newEnd} min={newStart} onChange={(e) => setNewEnd(e.target.value)} />
-        </label>
-      </div>
-      <label className="field">
-        <span>Label (optional)</span>
-        <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. Half term break" />
-      </label>
-      <div className="field-row">
-        <button className="btn-primary" onClick={() => addClosure("minderHoliday")}>
-          Add my holiday
-        </button>
-        <button className="btn-quiet" onClick={() => addClosure("bankHoliday")}>
-          Add as bank holiday
-        </button>
-      </div>
-      {(() => {
-        const row = (c: Closure) => (
-          <div key={c.id} className="closure-row">
-            <i className="swatch" style={{ background: CLOSURE_COLOURS[c.kind] }} />
-            <span className="closure-main">
-              <span className="closure-label">{c.label}</span>
-              <span className="hint">
-                {c.start === c.end
-                  ? fmtDateLong(c.start)
-                  : `${fmtDateLong(c.start)} \u2013 ${fmtDateLong(c.end)}`}
-              </span>
-            </span>
-            <button
-              className="sheet-close"
-              aria-label={`Remove ${c.label}`}
-              onClick={() => persistClosures(closures.filter((x) => x.id !== c.id))}
-            >
-              ✕
-            </button>
-          </div>
-        );
-        const mine = closures.filter((c) => c.kind === "minderHoliday");
-        const bankAll = closures.filter((c) => c.kind === "bankHoliday");
-        const today = todayISO();
-        const bankUpcoming = bankAll.filter((c) => c.end >= today);
-        const bankPast = bankAll.filter((c) => c.end < today);
-        return (
-          <>
-            <Collapsible title="My holidays" count={mine.length} defaultOpen={mine.length > 0}>
-              {mine.length === 0 ? (
-                <p className="hint">None yet — add your first closure above.</p>
-              ) : (
-                mine.map(row)
-              )}
-            </Collapsible>
-            <Collapsible title="Bank holidays" count={bankAll.length}>
-              {bankUpcoming.map(row)}
-              {bankPast.length > 0 && (
-                <Collapsible title="Earlier" count={bankPast.length}>
-                  {bankPast.map(row)}
-                </Collapsible>
-              )}
-              <button
-                className="btn-quiet"
-                onClick={() =>
-                  persistClosures([
-                    ...closures.filter((c) => c.kind !== "bankHoliday"),
-                    ...UK_BANK_HOLIDAYS,
-                  ])
-                }
-              >
-                Reset UK bank holidays
-              </button>
-            </Collapsible>
-          </>
-        );
-      })()}
-
+        </div>
+      </details>
+      <details className="settings-category">
+        <summary><span>Backup & app tools</span><small>Backups, demo data and diagnostics</small></summary>
+        <div className="form settings-category-body">
       <div className="form-section">Backup</div>
       <p className="hint">
-        Everything lives only on this phone — export a backup regularly and keep it somewhere safe.
+        Everything lives only on this device — export a backup regularly and keep it somewhere safe.
       </p>
       <button className="btn-primary" onClick={exportBackup}>Export backup</button>
       <label className="btn-quiet file-btn">
@@ -333,7 +313,11 @@ export function Settings() {
       >
         Remove all demo data
       </button>
-      {msg && <p className="hint">{msg}</p>}
+        </div>
+      </details>
+      {msg && <p className="hint" role="status">{msg}</p>}
+      {holiday && <HolidayEditor closure={holiday === "new" ? undefined : holiday}
+        onClose={() => setHoliday(null)} onSave={c => persistClosures([...closures.filter(x => x.id !== c.id), c])} />}
     </div>
   );
 }

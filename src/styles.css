@@ -464,6 +464,7 @@ body.sheet-open .tabbar {
    The letter is rendered at true A4 (794x1123 CSS px at 96dpi) and scaled
    down with a transform, so the on-screen preview is the printed page. */
 .a4-frame {
+  position: relative;
   width: 100%;
   aspect-ratio: 210 / 297;
   overflow: hidden;
@@ -472,6 +473,53 @@ body.sheet-open .tabbar {
   background: #fff;
   box-shadow: 0 2px 10px rgba(30, 42, 50, 0.08);
 }
+
+/* The preview is tappable; full-screen gestures transform the invoice only. */
+.invoice-expand { position: absolute; inset: 0; width: 100%; border: 0; border-radius: inherit; background: transparent; cursor: zoom-in; padding: 0; }
+.invoice-expand span { position: absolute; right: 8px; bottom: 8px; padding: 7px 10px; border-radius: 8px; background: var(--ink); color: white; font-size: 12px; font-weight: 700; }
+.invoice-expand:focus-visible { outline: 3px solid var(--marigold); outline-offset: -3px; }
+body.invoice-viewer-open { overflow: hidden; }
+.invoice-viewer { position: fixed; inset: 0; margin: 0; border: 0; padding: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; background: #dce0e1; color: var(--ink); overscroll-behavior: none; }
+.invoice-viewer[open] { display: flex; flex-direction: column; }
+.invoice-viewer::backdrop { background: var(--ink); }
+.invoice-viewer-toolbar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: max(8px, env(safe-area-inset-top, 0px)) 12px 8px; background: var(--paper); }
+.invoice-viewer-toolbar button { min-width: 40px; min-height: 44px; border: 0; border-radius: 8px; background: var(--mist); color: var(--ink); font: inherit; font-weight: 700; padding: 6px 10px; }
+.invoice-viewer-toolbar button:disabled { opacity: .4; }
+.invoice-zoom-controls { display: flex; gap: 4px; }
+.invoice-viewer-hint { flex: none; margin: 0; text-align: center; padding: 0 8px 8px; background: var(--paper); color: var(--ink-60); font-size: 12px; }
+.invoice-viewer-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; margin-bottom: env(safe-area-inset-bottom, 0px); }
+.invoice-viewer-stage:active { cursor: grabbing; }
+.invoice-viewer .invoice-viewer-page { position: absolute; top: 0; left: 0; height: auto; min-height: 1123px; background: white; box-shadow: 0 2px 12px #0002; pointer-events: none; }
+.settings-categories { max-width: 860px; }
+.settings-category { background: var(--card); border: 1px solid var(--mist); border-radius: 14px; overflow: hidden; }
+.settings-category > summary { position: relative; list-style: none; cursor: pointer; padding: 18px 42px 18px 18px; }
+.settings-category > summary::-webkit-details-marker { display: none; }
+.settings-category > summary::after { content: '›'; position: absolute; right: 18px; top: 20px; font-size: 24px; }
+.settings-category[open] > summary::after { transform: rotate(90deg); }
+.settings-category > summary span, .settings-category > summary small { display: block; }
+.settings-category > summary span { font-family: var(--display); font-weight: 800; font-size: 18px; }
+.settings-category > summary small { color: var(--ink-60); margin-top: 3px; }
+.settings-category-body { padding: 0 18px 20px; border-top: 1px solid var(--mist); padding-top: 16px; }
+.settings-category-body > .form-section:first-child { margin-top: 0; }
+.closure-edit { flex: none; padding: 8px; min-height: 44px; }
+.holiday-dialog { max-width: 500px; padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)); }
+.holiday-dialog .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.range-month-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.range-month-nav label { position: relative; text-align: center; font-weight: 800; flex: 1; }
+.range-month-nav label > span { display: block; }
+.range-month-nav input { font: inherit; width: 100%; min-width: 0; border: 0; background: transparent; color: var(--ink); text-align: center; padding: 4px; font-size: 16px; }
+.range-month-nav label > span { display: none; }
+.range-calendar .hint { margin: 12px 0; min-height: 2.8em; }
+.range-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.range-weekday { text-align: center; font-size: 12px; color: var(--ink-60); padding-bottom: 6px; }
+.range-day { min-height: 40px; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+.range-day[aria-current="date"] { border-color: var(--ink-60); }
+.range-day.in-range { background: #f9ecd7; }
+.range-day.endpoint { background: var(--marigold); color: var(--ink); font-weight: 800; }
+.range-day:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.range-summary { background: var(--paper); border-radius: 10px; padding: 12px; font-size: 14px; }
+.range-summary span { display: block; margin-top: 4px; color: var(--ink-60); }
+@media print { .invoice-expand { display: none; } }
 .a4-page {
   width: 794px;
   height: 1123px;
