@@ -955,15 +955,3 @@ div.child-card { gap: 0; }
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet-overlay { transition: none; }
 }
-
-/* EXPERIMENT: colour the system-inset background with the sheet backdrop.
-   Keep the app surface opaque so the backdrop is applied only once.
-   No viewport, status-bar mode or safe-area geometry changes. */
-html, body { background-color: var(--paper); transition: background-color 260ms ease; }
-#root { background-color: var(--paper); }
-html:has(.sheet-overlay.is-open), body:has(.sheet-overlay.is-open) {
-  background-color: #a2a6a8;
-}
-@media (prefers-reduced-motion: reduce) {
-  html, body { transition: none; }
-}
