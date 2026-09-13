@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { HolidayEditor } from "./HolidayEditor";
 import { Settings } from "../screens/Settings";
 import { A4Preview } from "./A4Preview";
+import { DateCalendar } from "./DateCalendar";
 import { db } from "../db";
 import { getClosures } from "../lib/settings";
 import { boundView, zoomAt } from "../lib/invoiceZoom";
@@ -96,6 +97,16 @@ it("anchors pinch zoom to the fingers and bounds panning and zoom", () => {
   expect(zoomAt({ scale: 2, x: 10, y: 20 }, 8, { x: 0, y: 0 }).scale).toBe(4);
   expect(zoomAt({ scale: 2, x: 10, y: 20 }, .1, { x: 0, y: 0 }).scale).toBe(1);
   expect(boundView({ scale: 2, x: -9999, y: -9999 }, 400, 700, 376, 800)).toEqual({ scale: 2, x: -352, y: -912 });
+});
+
+it("opens a calendar on the displayed month and chooses a date in another month", async () => {
+  const choose = vi.fn(), close = vi.fn();
+  await act(async () => root.render(<DateCalendar date="2026-09-14" onChoose={choose} onClose={close} />));
+  expect(button("Mon 14 Sept 2026").getAttribute("aria-pressed")).toBe("true");
+  await click(button("Next calendar month"));
+  await click(button("Fri 2 Oct 2026"));
+  expect(choose).toHaveBeenCalledWith("2026-10-02");
+  await click(button("Cancel")); expect(close).toHaveBeenCalledOnce();
 });
 
 it("handles two-finger zoom, then one-finger pan without changing the surrounding invoice carousel", async () => {

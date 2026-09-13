@@ -166,7 +166,7 @@ it("separates absences, removes routine status pills and keeps diary information
   ]);
   await render(h(Today, { date: "2026-09-09", setDate: vi.fn() }));
   await wait(() => expect(document.querySelector('[aria-label="Absent"]')?.textContent).toContain("Noah"));
-  expect(document.querySelector('.today-overview')?.textContent).toContain("1 attending");
+  expect(document.querySelector('.today-footer-summary')?.textContent).toContain("1 attending");
   expect(document.querySelector('[aria-label="Attending"]')?.textContent).toContain("Note added");
   expect(document.querySelector('.workspace-list')?.textContent).not.toContain("A long note");
   expect(document.querySelector('.workspace-list')?.textContent).not.toContain("As planned");

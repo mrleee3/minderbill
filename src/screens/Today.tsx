@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract, type DayLog } from "../db";
 import { addDays, fmtDateLong, fmtHours, minToInput, todayISO,
@@ -9,10 +9,24 @@ import { CLOSURE_COLOURS, CLOSURE_LABELS, closureOn, type Closure } from "../dat
 import { confirmDay, unconfirmDay } from "../lib/confirm";
 import { WorkspaceDetail, useWorkspaceNavigation } from "../components/Workspace";
 import { useDesktop } from "../lib/useDesktop";
+import { DateCalendar } from "../components/DateCalendar";
 import { ABSENCE_LABELS, DayEditor } from "../components/DayEditor";
 
 export function Today({ date, setDate }: { date: string; setDate: (d: string) => void }) {
   const desktop = useDesktop();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const footer = useRef<HTMLDivElement>(null);
+  const [barSize, setBarSize] = useState({ nav: 100, footer: 72 });
+  useEffect(() => {
+    if (desktop) return;
+    const nav = document.querySelector<HTMLElement>(".tabbar");
+    const measure = () => setBarSize({ nav: nav?.offsetHeight || 100, footer: footer.current?.offsetHeight || 72 });
+    const observer = new ResizeObserver(measure);
+    if (nav) observer.observe(nav);
+    if (footer.current) observer.observe(footer.current);
+    measure();
+    return () => observer.disconnect();
+  }, [desktop]);
   const canLeave = useWorkspaceNavigation();
   const choose = (child: ChildContract | null) => { if (child?.id !== editing?.id && canLeave()) setEditing(child); };
   const changeDate = (next: string) => { if (next && next !== date && canLeave()) setDate(next); };
@@ -33,12 +47,9 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
   const closure = closureOn(date, closures);
   const confirm = useLiveQuery(() => db.confirms.get(date), [date]);
   const isConfirmed = !!confirm;
-  const [justConfirmed, setJustConfirmed] = useState(false);
 
   const doConfirm = async () => {
     await confirmDay(date);
-    setJustConfirmed(true);
-    window.setTimeout(() => setJustConfirmed(false), 1200);
   };
 
   const logFor = (c: ChildContract): DayLog | undefined =>
@@ -59,12 +70,12 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
   const isToday = date === todayISO();
 
   return (
-    <div className="workspace today-workspace">
+    <div className="workspace today-workspace" style={{ "--today-nav-height": `${barSize.nav}px`, "--today-footer-height": `${barSize.footer}px` } as CSSProperties}>
       <section className="workspace-list" aria-label="Daily attendance">
       <div className="date-nav">
         <button className="nav-btn" onClick={() => changeDate(addDays(date, -1))} aria-label="Previous day">‹</button>
         <div className="date-label">
-          <strong>{isToday ? "Today" : fmtDateLong(date)}</strong>
+          <button className="today-date-picker" aria-label="Choose attendance date" aria-haspopup="dialog" onClick={() => setCalendarOpen(true)}><strong>{isToday ? "Today" : fmtDateLong(date)}</strong><span aria-hidden="true"> ▾</span></button>
           {isToday && <span className="hint"> {fmtDateLong(date)}</span>}
           {!isToday && (
             <button className="link" onClick={() => changeDate(todayISO())}>Back to today</button>
@@ -93,12 +104,6 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </div>
       )}
 
-      {!loading && children.length > 0 && (
-        <div className="today-overview">
-          <strong>{present.length ? `${present.length} attending` : "No attendance scheduled"}</strong>
-          <span>{present.length > 0 ? `${fmtHours(totalMin)} total care` : "You can still add attendance below"}{absent.length > 0 && ` · ${absent.length} absent`}</span>
-        </div>
-      )}
       {attending.length > 0 && <p className="today-guidance">Tap a child to record care, add a note or change hours.</p>}
       {([{ title: "Attending", items: present }, { title: "Absent", items: absent }]).map(group => group.items.length > 0 && (
         <section key={group.title} className="today-group" aria-label={group.title}>
@@ -123,39 +128,6 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </section>
       ))}
 
-      {attending.length > 0 && (
-        <div className={`confirm-bar${isConfirmed ? " done" : ""}${justConfirmed ? " celebrate" : ""}`}>
-          {isConfirmed ? (
-            <>
-              <span className="confirm-text">
-                <strong>✓ Day confirmed</strong>
-                <span className="hint">
-                  {new Date(confirm!.at).toLocaleString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </span>
-              <button className="btn-quiet inline" onClick={() => unconfirmDay(date)}>
-                Undo
-              </button>
-            </>
-          ) : (
-            <>
-              <span className="confirm-text">
-                <strong>Finish the day</strong>
-                <span className="hint">Check the hours and absences, then confirm.</span>
-              </span>
-              <button className="btn-primary inline" onClick={doConfirm}>
-                Confirm day
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
       {notToday.length > 0 && <details key={date} className="today-extras" open={attending.length === 0}>
         <summary>Not scheduled <span>{notToday.length}</span></summary>
         <p className="hint">Tap a child to add an extra day.</p>
@@ -168,6 +140,16 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </button>)}
       </details>}
 
+      <div ref={footer} className="today-footer" role="region" aria-label="Day summary and actions">
+        <span className="today-footer-summary">
+          <strong>{present.length} attending · {fmtHours(totalMin)}</strong>
+          <span>{isConfirmed ? "✓ Day confirmed" : absent.length ? `${absent.length} absent` : "Hours & attendance"}</span>
+        </span>
+        {attending.length > 0 && (isConfirmed
+          ? <button className="btn-quiet inline" onClick={() => unconfirmDay(date)}>Undo confirmation</button>
+          : <button className="btn-primary inline" onClick={doConfirm}>Confirm day</button>)}
+      </div>
+      {calendarOpen && <DateCalendar date={date} onClose={() => setCalendarOpen(false)} onChoose={next => { changeDate(next); setCalendarOpen(false); }} />}
       </section>
       <WorkspaceDetail
         open={!!editing}
