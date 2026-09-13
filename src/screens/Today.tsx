@@ -75,7 +75,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
       <div className="date-nav">
         <button className="nav-btn" onClick={() => changeDate(addDays(date, -1))} aria-label="Previous day">‹</button>
         <div className="date-label">
-          <button className="today-date-picker" aria-label="Choose attendance date" aria-haspopup="dialog" onClick={() => setCalendarOpen(true)}><strong>{isToday ? "Today" : fmtDateLong(date)}</strong><span aria-hidden="true"> ▾</span></button>
+          <button className="today-date-picker" aria-label="Choose attendance date" aria-haspopup="dialog" onClick={() => setCalendarOpen(true)}><strong>{isToday ? "Today" : fmtDateLong(date)}</strong></button>
           {isToday && <span className="hint"> {fmtDateLong(date)}</span>}
           {!isToday && (
             <button className="link" onClick={() => changeDate(todayISO())}>Back to today</button>
@@ -140,14 +140,14 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </button>)}
       </details>}
 
-      <div ref={footer} className="today-footer" role="region" aria-label="Day summary and actions">
+      <div ref={footer} className={`today-footer${isConfirmed ? " is-confirmed" : ""}`} role="region" aria-label="Day summary and actions">
         <span className="today-footer-summary">
           <strong>{present.length} attending · {fmtHours(totalMin)}</strong>
           <span>{isConfirmed ? "✓ Day confirmed" : absent.length ? `${absent.length} absent` : "Hours & attendance"}</span>
         </span>
         {attending.length > 0 && (isConfirmed
-          ? <button className="btn-quiet inline" onClick={() => unconfirmDay(date)}>Undo confirmation</button>
-          : <button className="btn-primary inline" onClick={doConfirm}>Confirm day</button>)}
+          ? <button key="undo" className="btn-quiet inline today-undo" onClick={() => unconfirmDay(date)}>Undo confirmation</button>
+          : <button key="confirm" className="btn-primary inline" onClick={doConfirm}>Confirm day</button>)}
       </div>
       {calendarOpen && <DateCalendar date={date} onClose={() => setCalendarOpen(false)} onChoose={next => { changeDate(next); setCalendarOpen(false); }} />}
       </section>

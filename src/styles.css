@@ -1113,3 +1113,9 @@ div.child-card { gap: 0; }
   .today-footer { position: sticky; bottom: 0; margin-top: 24px; z-index: 1; }
 }
 @media print { .today-footer { display: none; } }
+
+/* Confirmation belongs to the day; child colours retain their identity. */
+.today-footer.is-confirmed { background: #edf5ef; border-top-color: #c6ddce; }
+.today-footer.is-confirmed .today-footer-summary { color: var(--leaf-deep); }
+.today-footer.is-confirmed .today-footer-summary > span { color: var(--leaf-deep); }
+.today-footer .today-undo { appearance: none; background: #fff; color: var(--leaf-deep); border: 1px solid #c6ddce; border-radius: 12px; box-shadow: none; text-decoration: none; }

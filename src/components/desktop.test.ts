@@ -173,3 +173,19 @@ it("separates absences, removes routine status pills and keeps diary information
   await click(button("Ava", ".workspace-list button"));
   expect(document.querySelector<HTMLTextAreaElement>('.day-editor textarea')?.value).toBe("A long note kept inside the diary");
 });
+
+it("confirms and undoes a day without changing child colours", async () => {
+  await render(h(Today, { date: "2026-09-09", setDate: vi.fn() }));
+  await wait(() => expect(document.querySelectorAll(".workspace-list .child-card")).toHaveLength(2));
+  const colours = () => Array.from(document.querySelectorAll<HTMLElement>(".today-child .avatar")).map(el => el.style.background);
+  const originalColours = colours();
+  await click(button("Confirm day", ".today-footer button"));
+  await wait(() => expect(document.querySelector(".today-footer.is-confirmed")?.textContent).toContain("Day confirmed"));
+  expect(await db.confirms.get("2026-09-09")).toBeTruthy();
+  expect(colours()).toEqual(originalColours);
+  await click(button("Undo confirmation", ".today-footer button"));
+  await wait(() => expect(document.querySelector(".today-footer button")?.textContent).toBe("Confirm day"));
+  expect(document.querySelector(".today-footer.is-confirmed")).toBeNull();
+  expect(await db.confirms.get("2026-09-09")).toBeUndefined();
+  expect(colours()).toEqual(originalColours);
+});
