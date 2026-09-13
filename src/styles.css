@@ -502,6 +502,29 @@ body.invoice-viewer-open { overflow: hidden; }
 .settings-category-body { padding: 0 18px 20px; border-top: 1px solid var(--mist); padding-top: 16px; }
 .settings-category-body > .form-section:first-child { margin-top: 0; }
 .closure-edit { flex: none; width: auto; padding: 8px; min-height: 44px; }
+
+/* Today: one clear overview, child identity colours, and exceptions in plain text. */
+.today-overview { display: flex; flex-direction: column; gap: 3px; padding: 16px 18px; margin: 12px 0; border-radius: 14px; background: var(--marigold-soft); }
+.today-overview strong { font-family: var(--display); font-size: 22px; font-weight: 800; }
+.today-overview > span { font-size: 14px; color: var(--ink-60); }
+.today-guidance { font-size: 13px; color: var(--ink-60); margin: 14px 0 18px; }
+.today-group h3 { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; margin: 18px 0 10px; }
+.today-group h3 > span, .today-extras summary > span { color: var(--ink-60); font-size: 13px; }
+.today-workspace .today-child { border-left: 4px solid var(--child-colour); text-align: left; }
+.today-workspace .today-child .card-name { font-size: 17px; }
+.today-workspace .today-child .card-time { font-size: 14px; }
+.today-workspace .today-child .avatar { width: 40px; height: 40px; font-size: 18px; }
+.today-diary-summary { font-size: 12px; color: var(--ink-60); margin-top: 5px; }
+.today-open { flex: none; color: var(--ink-60); font-size: 24px; padding: 0 2px; }
+.today-extras { border-top: 1px solid var(--mist); padding-top: 16px; margin-top: 24px; }
+.today-extras summary { cursor: pointer; font-size: 14px; font-weight: 700; padding: 6px 0; }
+.today-extras summary > span { margin-left: 6px; }
+.today-workspace .confirm-bar { margin-top: 22px; flex-wrap: wrap; gap: 12px; }
+.today-workspace .confirm-text { flex: 1 1 180px; }
+.child-colour-key { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 12px 0; font-size: 12px; }
+.child-colour-key > span { display: inline-flex; align-items: center; gap: 6px; }
+.child-colour-key i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.child-colour-key small { flex-basis: 100%; color: var(--ink-60); }
 .holiday-dialog { max-width: 500px; padding-bottom: max(20px, env(safe-area-inset-bottom, 0px)); }
 .holiday-dialog .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .range-month-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

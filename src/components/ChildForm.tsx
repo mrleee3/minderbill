@@ -5,7 +5,7 @@ import { WEEKDAY_LABELS, fmtDateLong, inputToMin, minToInput, todayISO } from ".
 import { effectiveRatePence, scheduleOn } from "../lib/schedule";
 import { formatPence } from "../engine/invoice";
 import { BAND_LABELS, ageBandOn, surreyRateFor } from "../data/surrey";
-import { nextColour } from "../lib/settings";
+import { childColour, nextColour } from "../lib/settings";
 import { useLiveQuery } from "dexie-react-hooks";
 
 const DEFAULT_SLOT = { startMin: 480, endMin: 1050 }; // 8:00–17:30
@@ -124,7 +124,7 @@ export function ChildForm({
     const contract: ChildContract = {
       ...(existing ?? {}),
       name: name.trim(),
-      color: existing?.color ?? nextColour(allChildren),
+      color: existing ? childColour(existing, 0) : nextColour(allChildren),
       dob: dob || undefined,
       startDate,
       endDate: endDate || undefined,

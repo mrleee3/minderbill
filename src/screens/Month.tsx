@@ -137,7 +137,7 @@ export function Month({ onOpenDay }: { onOpenDay?: (date: string) => void }) {
               <span className="num">{parseISO(iso).d}</span>
               <span className="dots">
                 {dots.slice(0, 4).map((d, i) => (
-                  <i key={i} style={{ background: d.absent ? "transparent" : d.colour, borderColor: d.absent ? "var(--clay)" : d.colour }} className={d.absent ? "d-ring" : ""} />
+                  <i key={i} style={{ background: d.absent ? "transparent" : d.colour, borderColor: d.colour }} className={d.absent ? "d-ring" : ""} />
                 ))}
               </span>
             </button>
@@ -145,6 +145,10 @@ export function Month({ onOpenDay }: { onOpenDay?: (date: string) => void }) {
         })}
       </div>
       <p className="day-total hours">{fmtHours(totalMinutes)} across {monthLabel(viewDate)}</p>
+      <div className="child-colour-key" aria-label="Child colours">
+        {children.map((child, i) => <span key={child.id}><i style={{ background: childColour(child, i) }} aria-hidden="true" />{child.name}</span>)}
+        {children.length > 0 && <small>Filled dot: attending · Outline: absent</small>}
+      </div>
       <div className="legend">
         <span><i className="swatch ring-today" /> Today</span>
         <span><i className="swatch ring-unconfirmed" /> To confirm</span>
@@ -206,8 +210,8 @@ export function Month({ onOpenDay }: { onOpenDay?: (date: string) => void }) {
         .filter((r) => !r.resolved)
         .map(({ child, colour }) => (
           <button key={child.id} className="child-card quiet" onClick={() => setEditing(child)}>
-            <span className="avatar muted" style={{ background: `${colour}33` }}>
-              <span className="avatar-letter muted-letter">{child.name[0]?.toUpperCase()}</span>
+            <span className="avatar" style={{ background: colour }}>
+              <span className="avatar-letter">{child.name[0]?.toUpperCase()}</span>
             </span>
             <span className="card-main">
               <span className="card-name">

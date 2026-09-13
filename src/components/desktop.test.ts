@@ -8,6 +8,7 @@ import { Today } from "../screens/Today";
 import { Children } from "../screens/Children";
 import { Invoices } from "../screens/Invoices";
 import { WorkspaceProvider, WorkspaceDetail } from "./Workspace";
+import { childColour, nextColour, CHILD_COLOURS } from "../lib/settings";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -147,4 +148,28 @@ it("filters paid, unpaid and ungenerated invoices from latest versions", async (
   await click(button("To generate", ".invoice-filters button"));
   expect(document.querySelector(".workspace-list .child-card")?.textContent).toContain("Ella");
   expect(thirdId).toBeTruthy();
+});
+
+it("keeps child colours stable after filtering, sorting and editing legacy records", () => {
+  const ava = { ...child("Ava"), id: 3 }, noah = { ...child("Noah"), id: 7 };
+  expect(childColour(ava, 0)).toBe(childColour(ava, 6));
+  expect(childColour(noah, 1)).toBe(childColour(noah, 0));
+  expect(childColour({ ...ava, color: "#123456" }, 1)).toBe("#123456");
+  expect(nextColour([{ ...ava, id: 1 }])).not.toBe(CHILD_COLOURS[0]);
+});
+
+it("separates absences, removes routine status pills and keeps diary information compact", async () => {
+  const kids = await db.children.toArray();
+  await db.dayLogs.bulkAdd([
+    { childId: kids[0].id!, date: "2026-09-09", confirmed: false, startMin: 480, endMin: 1050, note: "A long note kept inside the diary" },
+    { childId: kids[1].id!, date: "2026-09-09", confirmed: false, startMin: 480, endMin: 1050, absence: "childSick" },
+  ]);
+  await render(h(Today, { date: "2026-09-09", setDate: vi.fn() }));
+  await wait(() => expect(document.querySelector('[aria-label="Absent"]')?.textContent).toContain("Noah"));
+  expect(document.querySelector('.today-overview')?.textContent).toContain("1 attending");
+  expect(document.querySelector('[aria-label="Attending"]')?.textContent).toContain("Note added");
+  expect(document.querySelector('.workspace-list')?.textContent).not.toContain("A long note");
+  expect(document.querySelector('.workspace-list')?.textContent).not.toContain("As planned");
+  await click(button("Ava", ".workspace-list button"));
+  expect(document.querySelector<HTMLTextAreaElement>('.day-editor textarea')?.value).toBe("A long note kept inside the diary");
 });

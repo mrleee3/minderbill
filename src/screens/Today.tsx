@@ -2,7 +2,6 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type ChildContract, type DayLog } from "../db";
 import { addDays, fmtDateLong, fmtHours, minToInput, todayISO,
-  ageLabel,
 } from "../lib/dates";
 import { resolveDay } from "../lib/schedule";
 import { childColour, getClosures } from "../lib/settings";
@@ -50,6 +49,8 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
     .sort((a, b) => (a.resolved?.startMin ?? 9999) - (b.resolved?.startMin ?? 9999));
 
   const attending = rows.filter((r) => r.resolved);
+  const present = attending.filter(r => !r.resolved!.absence);
+  const absent = attending.filter(r => r.resolved!.absence);
   const notToday = rows.filter((r) => !r.resolved);
   const totalMin = attending.reduce(
     (s, r) => s + (r.resolved!.absence ? 0 : r.resolved!.minutes),
@@ -77,7 +78,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         <div className="closure-note" style={{ borderColor: CLOSURE_COLOURS[closure.kind] }}>
           <strong>{closure.label}</strong>
           <span className="hint">
-            Everyone is marked "{CLOSURE_LABELS[closure.kind]}". Tap a child to override.
+            Scheduled children default to "{CLOSURE_LABELS[closure.kind]}". Tap a child to make an exception.
           </span>
         </div>
       )}
@@ -92,84 +93,35 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         </div>
       )}
 
-      {attending.map(({ child, colour, resolved }, i) => (
-        <button
-          key={child.id}
-          className={`child-card${editing?.id === child.id ? " selected" : ""}`}
-          aria-pressed={editing?.id === child.id}
-          onClick={() => choose(child)}
-          style={justConfirmed ? ({ "--stagger": `${i * 70}ms` } as CSSProperties) : undefined}
-        >
-          <span className="avatar" style={{ background: colour }}>
-            <span className="avatar-letter">{child.name[0]?.toUpperCase()}</span>
-          </span>
-          <span className="card-main">
-            <span className="card-name">
-                {child.name}
-                {child.dob && <span className="age"> ({ageLabel(child.dob, date)})</span>}
-              </span>
-            {resolved!.absence ? (
-              <span className="status absent">{ABSENCE_LABELS[resolved!.absence]}</span>
-            ) : (
-              <span className="card-time hours">
-                {minToInput(resolved!.startMin)}–{minToInput(resolved!.endMin)}
-                <span className="dot-sep">·</span>
-                {fmtHours(resolved!.minutes)}
-              </span>
-            )}
-            {isConfirmed && resolved!.source === "log" && !resolved!.absence && (
-              <span className="card-note">Adjusted from planned</span>
-            )}
-            {!!resolved!.careEntries?.length && <span className="card-note">{resolved!.careEntries.length} care {resolved!.careEntries.length === 1 ? "entry" : "entries"}</span>}
-            {resolved!.note && <span className="card-note">{resolved!.note}</span>}
-          </span>
-          <span
-            className={`status-chip ${
-              isConfirmed
-                ? "confirmed"
-                : resolved!.absence
-                  ? "absent"
-                  : resolved!.source === "log"
-                    ? "adjusted"
-                    : "planned"
-            }${justConfirmed ? " pop" : ""}`}
-          >
-            {isConfirmed
-              ? "✓ Confirmed"
-              : resolved!.absence
-                ? "Absent"
-                : resolved!.source === "log"
-                  ? "Adjusted"
-                  : "As planned"}
-          </span>
-        </button>
-      ))}
-
-      {attending.length > 0 && (
-        <p className="day-total hours">
-          {attending.filter((r) => !r.resolved!.absence).length} attending · {fmtHours(totalMin)}
-        </p>
+      {!loading && children.length > 0 && (
+        <div className="today-overview">
+          <strong>{present.length ? `${present.length} attending` : "No attendance scheduled"}</strong>
+          <span>{present.length > 0 ? `${fmtHours(totalMin)} total care` : "You can still add attendance below"}{absent.length > 0 && ` · ${absent.length} absent`}</span>
+        </div>
       )}
-
-      {notToday.length > 0 && (
-        <>
-          <div className="form-section">Not attending {isToday ? "today" : "this day"}</div>
-          {notToday.map(({ child, colour }) => (
-            <button key={child.id} className={`child-card quiet${editing?.id === child.id ? " selected" : ""}`} onClick={() => choose(child)}>
-              <span className="avatar muted" style={{ background: `${colour}33` }}>
-                <span className="avatar-letter muted-letter">{child.name[0]?.toUpperCase()}</span>
-              </span>
+      {attending.length > 0 && <p className="today-guidance">Tap a child to record care, add a note or change hours.</p>}
+      {([{ title: "Attending", items: present }, { title: "Absent", items: absent }]).map(group => group.items.length > 0 && (
+        <section key={group.title} className="today-group" aria-label={group.title}>
+          <h3>{group.title}<span>{group.items.length}</span></h3>
+          {group.items.map(({ child, colour, resolved }) => (
+            <button key={child.id} className={`child-card today-child${editing?.id === child.id ? " selected" : ""}`}
+              aria-pressed={editing?.id === child.id} onClick={() => choose(child)}
+              style={{ "--child-colour": colour } as CSSProperties}>
+              <span className="avatar" style={{ background: colour }}><span className="avatar-letter">{child.name[0]?.toUpperCase()}</span></span>
               <span className="card-main">
-                <span className="card-name">
-                {child.name}
-                {child.dob && <span className="age"> ({ageLabel(child.dob, date)})</span>}
+                <span className="card-name">{child.name}</span>
+                {resolved!.absence ? <span className="status absent">{ABSENCE_LABELS[resolved!.absence]}</span> :
+                  <span className="card-time hours">{minToInput(resolved!.startMin)}–{minToInput(resolved!.endMin)}<span className="dot-sep">·</span>{fmtHours(resolved!.minutes)}</span>}
+                {(!!resolved!.careEntries?.length || !!resolved!.note) && <span className="today-diary-summary">
+                  {resolved!.careEntries?.length ? `${resolved!.careEntries!.length} diary ${resolved!.careEntries!.length === 1 ? "entry" : "entries"}` : ""}
+                  {resolved!.note ? `${resolved!.careEntries?.length ? " · " : ""}Note added` : ""}
+                </span>}
               </span>
-              </span>
-              <span className="status-chip add">+ Log attendance</span>
+              <span className="today-open" aria-hidden="true">›</span>
             </button>
           ))}
-        </>
-      )}
+        </section>
+      ))}
 
       {attending.length > 0 && (
         <div className={`confirm-bar${isConfirmed ? " done" : ""}${justConfirmed ? " celebrate" : ""}`}>
@@ -193,8 +145,8 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
           ) : (
             <>
               <span className="confirm-text">
-                <strong>Everything right for {isToday ? "today" : "this day"}?</strong>
-                <span className="hint">Adjust any child above first, then confirm.</span>
+                <strong>Finish the day</strong>
+                <span className="hint">Check the hours and absences, then confirm.</span>
               </span>
               <button className="btn-primary inline" onClick={doConfirm}>
                 Confirm day
@@ -203,6 +155,18 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
           )}
         </div>
       )}
+
+      {notToday.length > 0 && <details key={date} className="today-extras" open={attending.length === 0}>
+        <summary>Not scheduled <span>{notToday.length}</span></summary>
+        <p className="hint">Tap a child to add an extra day.</p>
+        {notToday.map(({ child, colour }) => <button key={child.id}
+          className={`child-card today-child${editing?.id === child.id ? " selected" : ""}`} onClick={() => choose(child)}
+          style={{ "--child-colour": colour } as CSSProperties}>
+          <span className="avatar" style={{ background: colour }}><span className="avatar-letter">{child.name[0]?.toUpperCase()}</span></span>
+          <span className="card-main"><span className="card-name">{child.name}</span><span className="card-time">Add attendance</span></span>
+          <span className="today-open" aria-hidden="true">+</span>
+        </button>)}
+      </details>}
 
       </section>
       <WorkspaceDetail

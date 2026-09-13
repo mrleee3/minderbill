@@ -51,10 +51,12 @@ export const CHILD_COLOURS = [
 ];
 
 export function nextColour(existing: ChildContract[]): string {
-  const used = new Set(existing.map((c) => c.color));
+  const used = new Set(existing.map((c, i) => childColour(c, i)));
   return CHILD_COLOURS.find((c) => !used.has(c)) ?? CHILD_COLOURS[existing.length % CHILD_COLOURS.length];
 }
 
 export function childColour(c: ChildContract, index: number): string {
-  return c.color ?? CHILD_COLOURS[index % CHILD_COLOURS.length];
+  // Saved database IDs are stable across sorting, filtering and archiving.
+  const stableIndex = c.id != null ? Math.max(0, c.id - 1) : index;
+  return c.color ?? CHILD_COLOURS[stableIndex % CHILD_COLOURS.length];
 }
