@@ -183,7 +183,7 @@ it("confirms and undoes a day without changing child colours", async () => {
   await wait(() => expect(document.querySelector(".today-footer.is-confirmed")?.textContent).toContain("Day confirmed"));
   expect(await db.confirms.get("2026-09-09")).toBeTruthy();
   expect(colours()).toEqual(originalColours);
-  await click(button("Undo confirmation", ".today-footer button"));
+  await click(button("Undo", ".today-footer button"));
   await wait(() => expect(document.querySelector(".today-footer button")?.textContent).toBe("Confirm day"));
   expect(document.querySelector(".today-footer.is-confirmed")).toBeNull();
   expect(await db.confirms.get("2026-09-09")).toBeUndefined();

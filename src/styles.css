@@ -510,7 +510,7 @@ body.invoice-viewer-open { overflow: hidden; }
 .today-guidance { font-size: 13px; color: var(--ink-60); margin: 14px 0 18px; }
 .today-group h3 { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 700; margin: 18px 0 10px; }
 .today-group h3 > span, .today-extras summary > span { color: var(--ink-60); font-size: 13px; }
-.today-workspace .today-child { border-left: 4px solid var(--child-colour); text-align: left; }
+.today-workspace .today-child { border-left: 4px solid var(--child-colour); text-align: left; background: color-mix(in srgb, var(--child-colour) 14%, white); }
 .today-workspace .today-child .card-name { font-size: 17px; }
 .today-workspace .today-child .card-time { font-size: 14px; }
 .today-workspace .today-child .avatar { width: 40px; height: 40px; font-size: 18px; }
@@ -970,7 +970,7 @@ button.child-card { padding: 12px 14px; }
 .care-dialog .form { gap: 14px; }
 .care-dialog .field { flex: none; }
 .care-dialog-actions { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
-.care-dialog-actions > * { flex: 1; min-width: 0; }
+.care-dialog-actions > * { flex: 1; min-width: 0; margin: 0; min-height: 48px; display: flex; align-items: center; justify-content: center; }
 .care-dialog .care-delete { color: var(--clay); }
 
 .child-diary { padding-top: 8px; }
@@ -1118,4 +1118,11 @@ div.child-card { gap: 0; }
 .today-footer.is-confirmed { background: #edf5ef; border-top-color: #c6ddce; }
 .today-footer.is-confirmed .today-footer-summary { color: var(--leaf-deep); }
 .today-footer.is-confirmed .today-footer-summary > span { color: var(--leaf-deep); }
-.today-footer .today-undo { appearance: none; background: #fff; color: var(--leaf-deep); border: 1px solid #c6ddce; border-radius: 12px; box-shadow: none; text-decoration: none; }
+.today-footer .today-undo { appearance: none; background: transparent; color: var(--leaf-deep); border: 0; border-radius: 0; box-shadow: none; text-decoration: underline; text-underline-offset: 3px; font-weight: 600; min-width: 44px; }
+
+/* Equal line boxes prevent the content jumping when the date changes. */
+.today-workspace .date-label .today-date-secondary { display: block; box-sizing: border-box; margin: 0 auto; padding: 2px; font-size: 12px; line-height: 20px; min-height: 24px; }
+.today-date-picker { line-height: 24px; }
+@media screen and (min-width: 1100px) {
+  .today-workspace .today-child.selected { border-color: var(--child-colour); box-shadow: 0 0 0 1px var(--child-colour); background: color-mix(in srgb, var(--child-colour) 20%, white); }
+}

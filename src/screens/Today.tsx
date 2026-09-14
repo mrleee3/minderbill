@@ -76,9 +76,9 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
         <button className="nav-btn" onClick={() => changeDate(addDays(date, -1))} aria-label="Previous day">‹</button>
         <div className="date-label">
           <button className="today-date-picker" aria-label="Choose attendance date" aria-haspopup="dialog" onClick={() => setCalendarOpen(true)}><strong>{isToday ? "Today" : fmtDateLong(date)}</strong></button>
-          {isToday && <span className="hint"> {fmtDateLong(date)}</span>}
+          {isToday && <span className="hint today-date-secondary">{fmtDateLong(date)}</span>}
           {!isToday && (
-            <button className="link" onClick={() => changeDate(todayISO())}>Back to today</button>
+            <button className="link today-date-secondary" onClick={() => changeDate(todayISO())}>Back to today</button>
           )}
         </div>
         <button className="nav-btn" onClick={() => changeDate(addDays(date, 1))} aria-label="Next day">›</button>
@@ -146,7 +146,7 @@ export function Today({ date, setDate }: { date: string; setDate: (d: string) =>
           <span>{isConfirmed ? "✓ Day confirmed" : absent.length ? `${absent.length} absent` : "Hours & attendance"}</span>
         </span>
         {attending.length > 0 && (isConfirmed
-          ? <button key="undo" className="btn-quiet inline today-undo" onClick={() => unconfirmDay(date)}>Undo confirmation</button>
+          ? <button key="undo" className="btn-quiet inline today-undo" aria-label="Undo confirmation" onClick={() => unconfirmDay(date)}>Undo</button>
           : <button key="confirm" className="btn-primary inline" onClick={doConfirm}>Confirm day</button>)}
       </div>
       {calendarOpen && <DateCalendar date={date} onClose={() => setCalendarOpen(false)} onChoose={next => { changeDate(next); setCalendarOpen(false); }} />}
